@@ -132,6 +132,7 @@ fun PostCardItem(
     onShareClick: (Int) -> Unit = {},
     onBookmarkClick: (Int) -> Unit = {},
     onMoreClick: (Int) -> Unit = {},
+    onImageClick: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -185,7 +186,8 @@ fun PostCardItem(
                 Spacer(modifier = Modifier.height(12.dp))
                 PostCardImages(
                     imageUUIDs = postCard.imageUUIDs,
-                    onImageClick = { /* TODO: 查看大图 */ }
+                    postId = postCard.postId,
+                    onImageClick = onImageClick
                 )
             }
             
@@ -299,7 +301,8 @@ private fun PostCardContent(postCard: PostCard) {
 @Composable
 private fun PostCardImages(
     imageUUIDs: List<String>,
-    onImageClick: (String) -> Unit
+    postId: Int,
+    onImageClick: (Int, Int) -> Unit
 ) {
     when (imageUUIDs.size) {
         1 -> {
@@ -312,7 +315,7 @@ private fun PostCardImages(
                     .height(200.dp)
                     .clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.Crop,
-                onClick = { onImageClick(imageUUIDs[0]) }
+                onClick = { onImageClick(postId, 0) }
             )
         }
         
@@ -321,7 +324,7 @@ private fun PostCardImages(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                imageUUIDs.forEach { uuid ->
+                imageUUIDs.forEachIndexed { index, uuid ->
                     ShimmerAsyncImage(
                         imageUrl = "${TangyuanApplication.instance.bizDomain}images/$uuid.jpg",
                         contentDescription = "文章图片",
@@ -330,7 +333,7 @@ private fun PostCardImages(
                             .height(120.dp)
                             .clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop,
-                        onClick = { onImageClick(uuid) }
+                        onClick = { onImageClick(postId, index) }
                     )
                 }
             }
@@ -341,7 +344,7 @@ private fun PostCardImages(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                imageUUIDs.forEach { uuid ->
+                imageUUIDs.forEachIndexed { index, uuid ->
                     ShimmerAsyncImage(
                         imageUrl = "${TangyuanApplication.instance.bizDomain}images/$uuid.jpg",
                         contentDescription = "文章图片",
@@ -350,7 +353,7 @@ private fun PostCardImages(
                             .height(100.dp)
                             .clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop,
-                        onClick = { onImageClick(uuid) }
+                        onClick = { onImageClick(postId, index) }
                     )
                 }
             }

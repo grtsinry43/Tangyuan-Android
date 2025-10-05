@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 fun TalkScreen(
     onPostClick: (Int) -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
+    onImageClick: (Int, Int) -> Unit = { _, _ -> },
     viewModel: TalkViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -101,6 +102,7 @@ fun TalkScreen(
                         onMoreClick = { postId ->
                             // TODO: 显示更多操作菜单
                         },
+                        onImageClick = onImageClick,
                         onErrorDismiss = viewModel::clearError,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedContentScope = animatedContentScope
@@ -129,6 +131,7 @@ private fun PostList(
     onShareClick: (Int) -> Unit,
     onBookmarkClick: (Int) -> Unit,
     onMoreClick: (Int) -> Unit,
+    onImageClick: (Int, Int) -> Unit,
     onErrorDismiss: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -151,6 +154,7 @@ private fun PostList(
                 onShareClick = onShareClick,
                 onBookmarkClick = onBookmarkClick,
                 onMoreClick = onMoreClick,
+                onImageClick = onImageClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedContentScope = animatedContentScope
             )

@@ -51,7 +51,7 @@ fun PostDetailScreen(
     postId: Int,
     onBackClick: () -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
-    onImageClick: (String) -> Unit = {},
+    onImageClick: (Int, Int) -> Unit = { _, _ -> },
     viewModel: PostDetailViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -181,7 +181,7 @@ private fun PostDetailContent(
     isError: Boolean,
     errorMessage: String?,
     onAuthorClick: (Int) -> Unit,
-    onImageClick: (String) -> Unit,
+    onImageClick: (Int, Int) -> Unit,
     onReplyToComment: (CommentCard) -> Unit,
     onDeleteComment: (Int) -> Unit,
     onRetry: () -> Unit,
@@ -256,7 +256,7 @@ private fun PostDetailContent(
 private fun PostDetailCard(
     postCard: PostCard,
     onAuthorClick: (Int) -> Unit,
-    onImageClick: (String) -> Unit,
+    onImageClick: (Int, Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
@@ -311,6 +311,7 @@ private fun PostDetailCard(
                 Spacer(modifier = Modifier.height(16.dp))
                 PostDetailImages(
                     imageUUIDs = postCard.imageUUIDs,
+                    postId = postCard.postId,
                     onImageClick = onImageClick
                 )
             }
@@ -403,7 +404,8 @@ private fun PostDetailHeader(
 @Composable
 private fun PostDetailImages(
     imageUUIDs: List<String>,
-    onImageClick: (String) -> Unit
+    postId: Int,
+    onImageClick: (Int, Int) -> Unit
 ) {
     when (imageUUIDs.size) {
         1 -> {
@@ -416,7 +418,7 @@ private fun PostDetailImages(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
-                    .clickable { onImageClick(imageUUIDs[0]) },
+                    .clickable { onImageClick(postId, 0) },
                 contentScale = ContentScale.FillWidth
             )
         }
@@ -425,10 +427,10 @@ private fun PostDetailImages(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                items(imageUUIDs) { uuid ->
+                items(imageUUIDs.size) { index ->
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data("${TangyuanApplication.instance.bizDomain}images/$uuid.jpg")
+                            .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[index]}.jpg")
                             .crossfade(true)
                             .build(),
                         contentDescription = "文章图片",
@@ -436,7 +438,7 @@ private fun PostDetailImages(
                             .width(200.dp)
                             .height(150.dp)
                             .clip(MaterialTheme.shapes.medium)
-                            .clickable { onImageClick(uuid) },
+                            .clickable { onImageClick(postId, index) },
                         contentScale = ContentScale.Crop
                     )
                 }

@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -21,6 +20,7 @@ import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
+import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
 import com.qingshuige.tangyuan.ui.screens.LoginScreen
 
@@ -39,6 +39,9 @@ fun App() {
                     onLoginClick = { navController.navigate(Screen.Login.route) },
                     onPostClick = { postId ->
                         navController.navigate(Screen.PostDetail.createRoute(postId))
+                    },
+                    onImageClick = { postId, imageIndex ->
+                        navController.navigate(Screen.PostDetail.createRoute(postId, "image") + "?imageIndex=$imageIndex")
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable
@@ -78,23 +81,113 @@ fun App() {
                 LoginScreen(navController = navController)
             }
             
-            // 帖子详情页 - 只有共享元素动画，无页面切换动画
+            // 帖子详情页 - 统一容器管理两种模式
             composable(
                 route = Screen.PostDetail.route,
-                arguments = listOf(navArgument("postId") { type = NavType.IntType })
+                arguments = listOf(
+                    navArgument("postId") { type = NavType.IntType },
+                    navArgument("mode") { type = NavType.StringType; defaultValue = "text" }
+                )
             ) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getInt("postId") ?: 0
-                PostDetailScreen(
+                val initialMode = backStackEntry.arguments?.getString("mode") ?: "text"
+                
+                PostDetailContainer(
                     postId = postId,
+                    initialMode = initialMode,
                     onBackClick = { navController.popBackStack() },
                     onAuthorClick = { authorId ->
                         // TODO: 导航到用户详情页
                     },
-                    onImageClick = { imageUuid ->
-                        // TODO: 导航到图片查看页
-                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 帖子详情容器 - 统一管理文字和图片两种模式
+ * 保持与PostCard的共享元素动画，同时支持内部模式切换动画
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun PostDetailContainer(
+    postId: Int,
+    initialMode: String,
+    onBackClick: () -> Unit,
+    onAuthorClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope
+) {
+    // 本地状态管理模式切换
+    var currentMode by remember { mutableStateOf(initialMode) }
+    var imageIndex by remember { mutableIntStateOf(0) }
+    
+    // 为模式切换创建内部AnimatedContent
+    AnimatedContent(
+        targetState = currentMode,
+        transitionSpec = {
+            // 使用滑动动画让切换更自然
+            when {
+                targetState == "image" && initialState == "text" -> {
+                    slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = tween(400)
+                    ) togetherWith slideOutVertically(
+                        targetOffsetY = { -it },
+                        animationSpec = tween(400)
+                    )
+                }
+                targetState == "text" && initialState == "image" -> {
+                    slideInVertically(
+                        initialOffsetY = { -it },
+                        animationSpec = tween(400)
+                    ) togetherWith slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = tween(400)
+                    )
+                }
+                else -> {
+                    fadeIn(animationSpec = tween(300)) togetherWith 
+                    fadeOut(animationSpec = tween(300))
+                }
+            }
+        },
+        label = "detail_mode_switch"
+    ) { mode ->
+        when (mode) {
+            "image" -> {
+                ImageDetailScreen(
+                    postId = postId,
+                    initialImageIndex = imageIndex,
+                    onBackClick = onBackClick,
+                    onAuthorClick = onAuthorClick,
+                    onSwitchToTextMode = {
+                        currentMode = "text"
+                    },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = this@AnimatedContent
+                )
+            }
+            else -> {
+                PostDetailScreen(
+                    postId = postId,
+                    onBackClick = onBackClick,
+                    onAuthorClick = onAuthorClick,
+                    onImageClick = { _, selectedImageIndex ->
+                        imageIndex = selectedImageIndex
+                        currentMode = "image"
+                    },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = if (mode == initialMode) {
+                        // 如果是初始模式，使用外部的animatedContentScope来保持与PostCard的共享动画
+                        animatedContentScope
+                    } else {
+                        // 如果是切换后的模式，使用内部的AnimatedContent scope
+                        this@AnimatedContent
+                    }
                 )
             }
         }
@@ -106,6 +199,7 @@ fun App() {
 fun MainFlow(
     onLoginClick: () -> Unit,
     onPostClick: (Int) -> Unit,
+    onImageClick: (Int, Int) -> Unit = { _, _ -> },
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
@@ -151,6 +245,7 @@ fun MainFlow(
                     onAuthorClick = { authorId ->
                         // TODO: 导航到用户详情页
                     },
+                    onImageClick = onImageClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
                 )
