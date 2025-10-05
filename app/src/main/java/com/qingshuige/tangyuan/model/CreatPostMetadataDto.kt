@@ -3,9 +3,9 @@ package com.qingshuige.tangyuan.model
 import java.util.Date
 
 data class CreatPostMetadataDto(
-    var isVisible: Boolean = false,
-    var postDateTime: Date? = null,
-    var sectionId: Int = 0,
-    var categoryId: Int = 0,
-    var userId: Int = 0
+    val isVisible: Boolean = false,
+    val postDateTime: Date? = null,
+    val sectionId: Int = 0,
+    val categoryId: Int = 0,
+    val userId: Int = 0
 )

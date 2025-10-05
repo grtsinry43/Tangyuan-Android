@@ -1,9 +1,9 @@
 package com.qingshuige.tangyuan.model
 
 data class CreateUserDto(
-    var avatarGuid: String? = null,
-    var isoRegionName: String? = null,
-    var nickName: String? = null,
-    var password: String? = null,
-    var phoneNumber: String? = null
+    val avatarGuid: String? = null,
+    val isoRegionName: String? = null,
+    val nickName: String? = null,
+    val password: String? = null,
+    val phoneNumber: String? = null
 )

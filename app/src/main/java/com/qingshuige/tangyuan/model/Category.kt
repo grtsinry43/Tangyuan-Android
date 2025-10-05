@@ -1,11 +1,7 @@
 package com.qingshuige.tangyuan.model
 
 data class Category(
-    var categoryId: Int = 0,
-    var baseName: String? = null,
-    var baseDescription: String? = null
-) {
-    override fun toString(): String {
-        return baseName!!
-    }
-}
+    val categoryId: Int = 0,
+    val baseName: String? = null,
+    val baseDescription: String? = null
+)

@@ -3,11 +3,11 @@ package com.qingshuige.tangyuan.model
 import java.util.Date
 
 data class NewNotification(
-    var notificationId: Int = 0,
-    var type: String? = null,
-    var targetUserId: Int = 0,
-    var sourceId: Int = 0,
-    var sourceType: String? = null,
-    var isRead: Boolean = false,
-    var createDate: Date? = null
+    val notificationId: Int = 0,
+    val type: String? = null,
+    val targetUserId: Int = 0,
+    val sourceId: Int = 0,
+    val sourceType: String? = null,
+    val isRead: Boolean = false,
+    val createDate: Date? = null
 )

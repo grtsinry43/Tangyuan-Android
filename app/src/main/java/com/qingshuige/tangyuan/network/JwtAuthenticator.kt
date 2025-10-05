@@ -9,46 +9,46 @@ import java.io.IOException
 
 class JwtAuthenticator(private val tm: TokenManager, private val baseUrl: String) :
     Authenticator {
-    
+
     private val gson = Gson()
     private val mediaType = "application/json; charset=utf-8".toMediaType()
-    
+
     @Throws(IOException::class)
     override fun authenticate(route: Route?, response: Response): Request? {
         // 创建登录请求体
-        val loginDto = LoginDto().apply {
+        val loginDto = LoginDto(
+            password = tm.password,
             phoneNumber = tm.phoneNumber
-            password = tm.password
-        }
-        
+        )
+
         val json = gson.toJson(loginDto)
         val requestBody = json.toRequestBody(mediaType)
-        
+
         // 创建登录请求
         val loginRequest = Request.Builder()
             .url("${baseUrl}auth/login")
             .post(requestBody)
             .build()
-        
+
         // 创建新的 OkHttpClient 用于登录请求（避免递归）
         val client = OkHttpClient.Builder()
             .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .build()
-        
+
         return try {
             // 执行登录请求
             val loginResponse = client.newCall(loginRequest).execute()
-            
+
             if (loginResponse.isSuccessful) {
                 val responseBody = loginResponse.body?.string()
                 val tokenResponse = gson.fromJson(responseBody, Map::class.java)
                 val newToken = tokenResponse?.values?.firstOrNull() as? String
-                
+
                 if (newToken != null) {
                     // 更新 token
                     tm.token = newToken
-                    
+
                     // 重试原始请求，添加新的 access token
                     response.request.newBuilder()
                         .header("Authorization", "Bearer $newToken")
