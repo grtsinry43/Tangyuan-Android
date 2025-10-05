@@ -228,8 +228,8 @@ private fun ImagePager(
     ) { page ->
         ZoomableImage(
             imageUrl = "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[page]}.jpg",
-            imageUuid = imageUUIDs[page],
             postId = postId,
+            imageIndex = page,
             contentDescription = "图片 ${page + 1}",
             sharedTransitionScope = sharedTransitionScope,
             animatedContentScope = animatedContentScope
@@ -244,8 +244,8 @@ private fun ImagePager(
 @Composable
 private fun ZoomableImage(
     imageUrl: String,
-    imageUuid: String,
     postId: Int,
+    imageIndex: Int,
     contentDescription: String,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -279,10 +279,10 @@ private fun ZoomableImage(
                     if (sharedTransitionScope != null && animatedContentScope != null) {
                         with(sharedTransitionScope) {
                             mod.sharedElement(
-                                rememberSharedContentState(key = "post_card_$postId"),
+                                rememberSharedContentState(key = "post_image_${postId}_${imageIndex}"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
-                                    tween(durationMillis = 500)
+                                    tween(durationMillis = 400, easing = FastOutSlowInEasing)
                                 }
                             )
                         }

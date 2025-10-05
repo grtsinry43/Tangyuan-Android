@@ -271,7 +271,7 @@ private fun PostDetailCard(
                             rememberSharedContentState(key = "post_card_${postCard.postId}"),
                             animatedVisibilityScope = animatedContentScope,
                             boundsTransform = { _, _ ->
-                                tween(durationMillis = 500)
+                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
                             }
                         )
                     }
@@ -312,7 +312,9 @@ private fun PostDetailCard(
                 PostDetailImages(
                     imageUUIDs = postCard.imageUUIDs,
                     postId = postCard.postId,
-                    onImageClick = onImageClick
+                    onImageClick = onImageClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
                 )
             }
             
@@ -401,11 +403,14 @@ private fun PostDetailHeader(
 /**
  * 帖子详情图片
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PostDetailImages(
     imageUUIDs: List<String>,
     postId: Int,
-    onImageClick: (Int, Int) -> Unit
+    onImageClick: (Int, Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     when (imageUUIDs.size) {
         1 -> {
@@ -418,7 +423,20 @@ private fun PostDetailImages(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
-                    .clickable { onImageClick(postId, 0) },
+                    .clickable { onImageClick(postId, 0) }
+                    .let { mod ->
+                        if (sharedTransitionScope != null && animatedContentScope != null) {
+                            with(sharedTransitionScope) {
+                                mod.sharedElement(
+                                    rememberSharedContentState(key = "post_image_${postId}_0"),
+                                    animatedVisibilityScope = animatedContentScope,
+                                    boundsTransform = { _, _ ->
+                                        tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                    }
+                                )
+                            }
+                        } else mod
+                    },
                 contentScale = ContentScale.FillWidth
             )
         }
@@ -438,7 +456,20 @@ private fun PostDetailImages(
                             .width(200.dp)
                             .height(150.dp)
                             .clip(MaterialTheme.shapes.medium)
-                            .clickable { onImageClick(postId, index) },
+                            .clickable { onImageClick(postId, index) }
+                            .let { mod ->
+                                if (sharedTransitionScope != null && animatedContentScope != null) {
+                                    with(sharedTransitionScope) {
+                                        mod.sharedElement(
+                                            rememberSharedContentState(key = "post_image_${postId}_$index"),
+                                            animatedVisibilityScope = animatedContentScope,
+                                            boundsTransform = { _, _ ->
+                                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                            }
+                                        )
+                                    }
+                                } else mod
+                            },
                         contentScale = ContentScale.Crop
                     )
                 }

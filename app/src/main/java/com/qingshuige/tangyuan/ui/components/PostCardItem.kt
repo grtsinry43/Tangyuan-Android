@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -187,7 +188,9 @@ fun PostCardItem(
                 PostCardImages(
                     imageUUIDs = postCard.imageUUIDs,
                     postId = postCard.postId,
-                    onImageClick = onImageClick
+                    onImageClick = onImageClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
                 )
             }
             
@@ -298,11 +301,14 @@ private fun PostCardContent(postCard: PostCard) {
 /**
  * 图片展示
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PostCardImages(
     imageUUIDs: List<String>,
     postId: Int,
-    onImageClick: (Int, Int) -> Unit
+    onImageClick: (Int, Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     when (imageUUIDs.size) {
         1 -> {
@@ -313,7 +319,20 @@ private fun PostCardImages(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(MaterialTheme.shapes.medium),
+                    .clip(MaterialTheme.shapes.medium)
+                    .let { mod ->
+                        if (sharedTransitionScope != null && animatedContentScope != null) {
+                            with(sharedTransitionScope) {
+                                mod.sharedElement(
+                                    rememberSharedContentState(key = "post_image_${postId}_0"),
+                                    animatedVisibilityScope = animatedContentScope,
+                                    boundsTransform = { _, _ ->
+                                        tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                    }
+                                )
+                            }
+                        } else mod
+                    },
                 contentScale = ContentScale.Crop,
                 onClick = { onImageClick(postId, 0) }
             )
@@ -331,7 +350,20 @@ private fun PostCardImages(
                         modifier = Modifier
                             .weight(1f)
                             .height(120.dp)
-                            .clip(MaterialTheme.shapes.medium),
+                            .clip(MaterialTheme.shapes.medium)
+                            .let { mod ->
+                                if (sharedTransitionScope != null && animatedContentScope != null) {
+                                    with(sharedTransitionScope) {
+                                        mod.sharedElement(
+                                            rememberSharedContentState(key = "post_image_${postId}_$index"),
+                                            animatedVisibilityScope = animatedContentScope,
+                                            boundsTransform = { _, _ ->
+                                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                            }
+                                        )
+                                    }
+                                } else mod
+                            },
                         contentScale = ContentScale.Crop,
                         onClick = { onImageClick(postId, index) }
                     )
@@ -351,7 +383,20 @@ private fun PostCardImages(
                         modifier = Modifier
                             .weight(1f)
                             .height(100.dp)
-                            .clip(MaterialTheme.shapes.medium),
+                            .clip(MaterialTheme.shapes.medium)
+                            .let { mod ->
+                                if (sharedTransitionScope != null && animatedContentScope != null) {
+                                    with(sharedTransitionScope) {
+                                        mod.sharedElement(
+                                            rememberSharedContentState(key = "post_image_${postId}_$index"),
+                                            animatedVisibilityScope = animatedContentScope,
+                                            boundsTransform = { _, _ ->
+                                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                            }
+                                        )
+                                    }
+                                } else mod
+                            },
                         contentScale = ContentScale.Crop,
                         onClick = { onImageClick(postId, index) }
                     )

@@ -83,18 +83,25 @@ fun App() {
             
             // 帖子详情页 - 统一容器管理两种模式
             composable(
-                route = Screen.PostDetail.route,
+                route = Screen.PostDetail.route + "?imageIndex={imageIndex}",
                 arguments = listOf(
                     navArgument("postId") { type = NavType.IntType },
-                    navArgument("mode") { type = NavType.StringType; defaultValue = "text" }
+                    navArgument("mode") { type = NavType.StringType; defaultValue = "text" },
+                    navArgument("imageIndex") { 
+                        type = NavType.IntType
+                        defaultValue = 0
+                        nullable = false
+                    }
                 )
             ) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getInt("postId") ?: 0
                 val initialMode = backStackEntry.arguments?.getString("mode") ?: "text"
+                val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
                 
                 PostDetailContainer(
                     postId = postId,
                     initialMode = initialMode,
+                    initialImageIndex = imageIndex,
                     onBackClick = { navController.popBackStack() },
                     onAuthorClick = { authorId ->
                         // TODO: 导航到用户详情页
@@ -116,6 +123,7 @@ fun App() {
 fun PostDetailContainer(
     postId: Int,
     initialMode: String,
+    initialImageIndex: Int = 0,
     onBackClick: () -> Unit,
     onAuthorClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
@@ -123,35 +131,35 @@ fun PostDetailContainer(
 ) {
     // 本地状态管理模式切换
     var currentMode by remember { mutableStateOf(initialMode) }
-    var imageIndex by remember { mutableIntStateOf(0) }
+    var imageIndex by remember { mutableIntStateOf(initialImageIndex) }
     
     // 为模式切换创建内部AnimatedContent
     AnimatedContent(
         targetState = currentMode,
         transitionSpec = {
-            // 使用滑动动画让切换更自然
+            // 使用更流畅的动画让切换更自然
             when {
                 targetState == "image" && initialState == "text" -> {
                     slideInVertically(
                         initialOffsetY = { it },
-                        animationSpec = tween(400)
+                        animationSpec = tween(500, easing = FastOutSlowInEasing)
                     ) togetherWith slideOutVertically(
                         targetOffsetY = { -it },
-                        animationSpec = tween(400)
+                        animationSpec = tween(500, easing = FastOutSlowInEasing)
                     )
                 }
                 targetState == "text" && initialState == "image" -> {
                     slideInVertically(
                         initialOffsetY = { -it },
-                        animationSpec = tween(400)
+                        animationSpec = tween(500, easing = FastOutSlowInEasing)
                     ) togetherWith slideOutVertically(
                         targetOffsetY = { it },
-                        animationSpec = tween(400)
+                        animationSpec = tween(500, easing = FastOutSlowInEasing)
                     )
                 }
                 else -> {
-                    fadeIn(animationSpec = tween(300)) togetherWith 
-                    fadeOut(animationSpec = tween(300))
+                    fadeIn(animationSpec = tween(400)) togetherWith 
+                    fadeOut(animationSpec = tween(400))
                 }
             }
         },
@@ -167,8 +175,8 @@ fun PostDetailContainer(
                     onSwitchToTextMode = {
                         currentMode = "text"
                     },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = this@AnimatedContent
+                    sharedTransitionScope = if (mode == initialMode) sharedTransitionScope else null,
+                    animatedContentScope = if (mode == initialMode) animatedContentScope else null
                 )
             }
             else -> {
@@ -180,14 +188,8 @@ fun PostDetailContainer(
                         imageIndex = selectedImageIndex
                         currentMode = "image"
                     },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = if (mode == initialMode) {
-                        // 如果是初始模式，使用外部的animatedContentScope来保持与PostCard的共享动画
-                        animatedContentScope
-                    } else {
-                        // 如果是切换后的模式，使用内部的AnimatedContent scope
-                        this@AnimatedContent
-                    }
+                    sharedTransitionScope = if (mode == initialMode) sharedTransitionScope else null,
+                    animatedContentScope = if (mode == initialMode) animatedContentScope else null
                 )
             }
         }
