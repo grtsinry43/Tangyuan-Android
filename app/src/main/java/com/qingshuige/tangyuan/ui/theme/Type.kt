@@ -18,38 +18,23 @@ import com.qingshuige.tangyuan.R
 
 // 中英文混合字体（通用）
 val TangyuanGeneralFontFamily = FontFamily(
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Light),      // 300
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Normal),     // 400
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Medium),     // 500
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.SemiBold),   // 600
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Bold),       // 700
+    Font(R.font.quicksand_variablefont_wght),
+    Font(R.font.notosanssc_variablefont_wght)
 )
 
 // 英文字体（Quicksand - 现代圆润）
 val EnglishFontFamily = FontFamily(
-    Font(R.font.quicksand_variablefont_wght, FontWeight.Light),
-    Font(R.font.quicksand_variablefont_wght, FontWeight.Normal),
-    Font(R.font.quicksand_variablefont_wght, FontWeight.Medium),
-    Font(R.font.quicksand_variablefont_wght, FontWeight.SemiBold),
-    Font(R.font.quicksand_variablefont_wght, FontWeight.Bold)
+    Font(R.font.quicksand_variablefont_wght)
 )
 
 // 中文字体（思源黑体 - 清晰易读）
 val ChineseFontFamily = FontFamily(
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Light),
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Normal),
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Medium),
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.SemiBold),
-    Font(R.font.notosanssc_variablefont_wght, FontWeight.Bold)
+    Font(R.font.notosanssc_variablefont_wght)
 )
 
 // 文学专用字体（思源宋体 - 传统韵味）
 val LiteraryFontFamily = FontFamily(
-    Font(R.font.notoserifsc_variablefont_wght, FontWeight.Light),
-    Font(R.font.notoserifsc_variablefont_wght, FontWeight.Normal),
-    Font(R.font.notoserifsc_variablefont_wght, FontWeight.Medium),
-    Font(R.font.notoserifsc_variablefont_wght, FontWeight.SemiBold),
-    Font(R.font.notoserifsc_variablefont_wght, FontWeight.Bold)
+    Font(R.font.notoserifsc_variablefont_wght)
 )
 
 // ====================================

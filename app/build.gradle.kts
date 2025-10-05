@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.kapt)
 }
 
 android {
@@ -57,6 +59,7 @@ dependencies {
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.navigation.compose)
     
     // Network dependencies
     implementation(libs.retrofit)
@@ -66,6 +69,19 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore.preferences)
+    
+    // Hilt dependencies
+    implementation(libs.hilt.android)
+    implementation(libs.ui.graphics)
+    implementation(libs.androidx.animation.core)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    
+    // ViewModel and Lifecycle
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    implementation(libs.pangu.jvm)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
