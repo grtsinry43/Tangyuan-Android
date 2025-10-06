@@ -6,6 +6,7 @@ sealed class Screen(val route: String, val title: String) {
     object Topic : Screen("topic", "侃一侃")
     object Message : Screen("message", "消息")
     object User : Screen("settings", "我的")
+    object About : Screen("about", "关于")
     object PostDetail : Screen("post_detail/{postId}", "帖子详情") {
         fun createRoute(postId: Int) = "post_detail/$postId"
     }

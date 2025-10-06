@@ -20,6 +20,7 @@ import com.qingshuige.tangyuan.navigation.Screen
 import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
+import com.qingshuige.tangyuan.ui.screens.AboutScreen
 import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
 import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
@@ -50,6 +51,7 @@ fun App() {
                     onAuthorClick = { authorId ->
                         navController.navigate(Screen.UserDetail.createRoute(authorId))
                     },
+                    onAboutClick = { navController.navigate(Screen.About.route) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable
                 )
@@ -169,6 +171,12 @@ fun App() {
                     animatedContentScope = this@composable
                 )
             }
+
+            composable(Screen.About.route) {
+                AboutScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
@@ -180,6 +188,7 @@ fun MainFlow(
     onPostClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
     onAuthorClick: (Int) -> Unit = {},
+    onAboutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
     userViewModel: UserViewModel = hiltViewModel()
@@ -258,7 +267,7 @@ fun MainFlow(
             }
             composable(Screen.Topic.route) { Text(text = "侃一侃") }
             composable(Screen.Message.route) { Text(text = "消息") }
-            composable(Screen.User.route) { 
+            composable(Screen.User.route) {
                 UserScreen(
                     onEditProfile = {
                         // TODO: 导航到编辑个人资料页面
@@ -269,9 +278,7 @@ fun MainFlow(
                     onSettings = {
                         // TODO: 导航到设置页面
                     },
-                    onAbout = {
-                        // TODO: 导航到关于页面
-                    }
+                    onAbout = onAboutClick
                 )
             }
         }
