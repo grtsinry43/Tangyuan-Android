@@ -283,7 +283,9 @@ private fun ZoomableImage(
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
                                     tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                                }
+                                },
+                                placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
+                                renderInOverlayDuringTransition = false
                             )
                         }
                     } else mod

@@ -23,12 +23,13 @@ import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
 import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
 import com.qingshuige.tangyuan.ui.screens.LoginScreen
+import com.qingshuige.tangyuan.ui.screens.UserDetailScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun App() {
     val navController = rememberNavController()
-    
+
     SharedTransitionLayout {
         NavHost(
             navController = navController,
@@ -41,7 +42,7 @@ fun App() {
                         navController.navigate(Screen.PostDetail.createRoute(postId))
                     },
                     onImageClick = { postId, imageIndex ->
-                        navController.navigate(Screen.PostDetail.createRoute(postId, "image") + "?imageIndex=$imageIndex")
+                        navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable
@@ -80,116 +81,86 @@ fun App() {
             ) {
                 LoginScreen(navController = navController)
             }
-            
-            // 帖子详情页 - 统一容器管理两种模式
+
+            // 帖子详情页
             composable(
-                route = Screen.PostDetail.route + "?imageIndex={imageIndex}",
+                route = Screen.PostDetail.route,
                 arguments = listOf(
-                    navArgument("postId") { type = NavType.IntType },
-                    navArgument("mode") { type = NavType.StringType; defaultValue = "text" },
-                    navArgument("imageIndex") { 
-                        type = NavType.IntType
-                        defaultValue = 0
-                        nullable = false
-                    }
+                    navArgument("postId") { type = NavType.IntType }
                 )
             ) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getInt("postId") ?: 0
-                val initialMode = backStackEntry.arguments?.getString("mode") ?: "text"
-                val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
-                
-                PostDetailContainer(
+
+                PostDetailScreen(
                     postId = postId,
-                    initialMode = initialMode,
-                    initialImageIndex = imageIndex,
                     onBackClick = { navController.popBackStack() },
                     onAuthorClick = { authorId ->
-                        // TODO: 导航到用户详情页
+                        navController.navigate(Screen.UserDetail.createRoute(authorId))
+                    },
+                    onImageClick = { postId, imageIndex ->
+                        navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex)) {
+                            popUpTo(Screen.PostDetail.createRoute(postId)) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable
                 )
             }
-        }
-    }
-}
 
-/**
- * 帖子详情容器 - 统一管理文字和图片两种模式
- * 保持与PostCard的共享元素动画，同时支持内部模式切换动画
- */
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun PostDetailContainer(
-    postId: Int,
-    initialMode: String,
-    initialImageIndex: Int = 0,
-    onBackClick: () -> Unit,
-    onAuthorClick: (Int) -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
-) {
-    // 本地状态管理模式切换
-    var currentMode by remember { mutableStateOf(initialMode) }
-    var imageIndex by remember { mutableIntStateOf(initialImageIndex) }
-    
-    // 为模式切换创建内部AnimatedContent
-    AnimatedContent(
-        targetState = currentMode,
-        transitionSpec = {
-            // 使用更流畅的动画让切换更自然
-            when {
-                targetState == "image" && initialState == "text" -> {
-                    slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = tween(500, easing = FastOutSlowInEasing)
-                    ) togetherWith slideOutVertically(
-                        targetOffsetY = { -it },
-                        animationSpec = tween(500, easing = FastOutSlowInEasing)
-                    )
-                }
-                targetState == "text" && initialState == "image" -> {
-                    slideInVertically(
-                        initialOffsetY = { -it },
-                        animationSpec = tween(500, easing = FastOutSlowInEasing)
-                    ) togetherWith slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(500, easing = FastOutSlowInEasing)
-                    )
-                }
-                else -> {
-                    fadeIn(animationSpec = tween(400)) togetherWith 
-                    fadeOut(animationSpec = tween(400))
-                }
-            }
-        },
-        label = "detail_mode_switch"
-    ) { mode ->
-        when (mode) {
-            "image" -> {
+            // 图片详情页
+            composable(
+                route = Screen.ImageDetail.route,
+                arguments = listOf(
+                    navArgument("postId") { type = NavType.IntType },
+                    navArgument("imageIndex") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getInt("postId") ?: 0
+                val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
+
                 ImageDetailScreen(
                     postId = postId,
                     initialImageIndex = imageIndex,
-                    onBackClick = onBackClick,
-                    onAuthorClick = onAuthorClick,
-                    onSwitchToTextMode = {
-                        currentMode = "text"
+                    onBackClick = { navController.popBackStack() },
+                    onAuthorClick = { authorId ->
+                        navController.navigate(Screen.UserDetail.createRoute(authorId))
                     },
-                    sharedTransitionScope = if (mode == initialMode) sharedTransitionScope else null,
-                    animatedContentScope = if (mode == initialMode) animatedContentScope else null
+                    onSwitchToTextMode = {
+                        navController.navigate(Screen.PostDetail.createRoute(postId)) {
+                            popUpTo(Screen.ImageDetail.createRoute(postId, imageIndex)) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedContentScope = this@composable
                 )
             }
-            else -> {
-                PostDetailScreen(
-                    postId = postId,
-                    onBackClick = onBackClick,
-                    onAuthorClick = onAuthorClick,
-                    onImageClick = { _, selectedImageIndex ->
-                        imageIndex = selectedImageIndex
-                        currentMode = "image"
+
+            // 用户详情页
+            composable(
+                route = Screen.UserDetail.route,
+                arguments = listOf(
+                    navArgument("userId") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+
+                UserDetailScreen(
+                    userId = userId,
+                    onBackClick = { navController.popBackStack() },
+                    onPostClick = { postId ->
+                        navController.navigate(Screen.PostDetail.createRoute(postId))
                     },
-                    sharedTransitionScope = if (mode == initialMode) sharedTransitionScope else null,
-                    animatedContentScope = if (mode == initialMode) animatedContentScope else null
+                    onFollowClick = {
+                        // TODO: 实现关注功能
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedContentScope = this@composable
                 )
             }
         }
@@ -210,7 +181,8 @@ fun MainFlow(
     val currentDestination = navBackStackEntry?.destination
 
     val bottomBarScreens = listOf(Screen.Talk, Screen.Topic, Screen.Message, Screen.User)
-    val currentScreen = bottomBarScreens.find { it.route == currentDestination?.route } ?: Screen.Talk
+    val currentScreen =
+        bottomBarScreens.find { it.route == currentDestination?.route } ?: Screen.Talk
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -220,8 +192,8 @@ fun MainFlow(
                 avatarUrl = "https://dogeoss.grtsinry43.com/img/author.jpeg",
                 pageLevel = PageLevel.PRIMARY,
                 onAvatarClick = onLoginClick,
-                onAnnouncementClick = { /* 公告点击事件 */ },
-                onPostClick = { /* 发表点击事件 */ }
+                onAnnouncementClick = {/* 公告点击事件 */ },
+                onPostClick = {/* 发表点击事件 */ }
             )
         },
         bottomBar = {
@@ -241,7 +213,7 @@ fun MainFlow(
             startDestination = Screen.Talk.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Talk.route) { 
+            composable(Screen.Talk.route) {
                 TalkScreen(
                     onPostClick = onPostClick,
                     onAuthorClick = { authorId ->

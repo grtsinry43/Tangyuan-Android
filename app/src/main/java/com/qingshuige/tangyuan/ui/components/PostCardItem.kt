@@ -174,7 +174,9 @@ fun PostCardItem(
             PostCardHeader(
                 postCard = postCard,
                 onAuthorClick = onAuthorClick,
-                onMoreClick = onMoreClick
+                onMoreClick = onMoreClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -216,11 +218,14 @@ fun PostCardItem(
 /**
  * 文章卡片头部 - 作者信息
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PostCardHeader(
     postCard: PostCard,
     onAuthorClick: (Int) -> Unit,
-    onMoreClick: (Int) -> Unit
+    onMoreClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -232,7 +237,20 @@ private fun PostCardHeader(
             contentDescription = "${postCard.authorName}的头像",
             modifier = Modifier
                 .size(40.dp)
-                .clip(CircleShape),
+                .clip(CircleShape)
+                .let { mod ->
+                    if (sharedTransitionScope != null && animatedContentScope != null) {
+                        with(sharedTransitionScope) {
+                            mod.sharedElement(
+                                rememberSharedContentState(key = "user_avatar_${postCard.authorId}"),
+                                animatedVisibilityScope = animatedContentScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                }
+                            )
+                        }
+                    } else mod
+                },
             contentScale = ContentScale.Crop,
             onClick = { onAuthorClick(postCard.authorId) }
         )

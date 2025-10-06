@@ -62,4 +62,14 @@ class UserRepository @Inject constructor(
             throw Exception("Search failed: ${response.message()}")
         }
     }
+    
+    fun getUserPosts(userId: Int): Flow<List<com.qingshuige.tangyuan.model.PostMetadata>> = flow {
+        val response = apiInterface.getMetadatasByUserID(userId).awaitResponse()
+        if (response.isSuccessful) {
+            response.body()?.let { emit(it) } 
+                ?: emit(emptyList())
+        } else {
+            throw Exception("Failed to get user posts: ${response.message()}")
+        }
+    }
 }
