@@ -70,6 +70,9 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore.preferences)
     
+    // JWT library
+    implementation(libs.java.jwt)
+    
     // Hilt dependencies
     implementation(libs.hilt.android)
     implementation(libs.ui.graphics)

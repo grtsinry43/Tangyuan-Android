@@ -8,6 +8,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,6 +25,8 @@ import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
 import com.qingshuige.tangyuan.ui.screens.LoginScreen
 import com.qingshuige.tangyuan.ui.screens.UserDetailScreen
+import com.qingshuige.tangyuan.ui.screens.UserScreen
+import com.qingshuige.tangyuan.viewmodel.UserViewModel
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -178,7 +181,8 @@ fun MainFlow(
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
     onAuthorClick: (Int) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null
+    animatedContentScope: AnimatedContentScope? = null,
+    userViewModel: UserViewModel = hiltViewModel()
 ) {
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
@@ -188,14 +192,40 @@ fun MainFlow(
     val currentScreen =
         bottomBarScreens.find { it.route == currentDestination?.route } ?: Screen.Talk
 
+    // 观察登录状态和用户信息
+    val loginState by userViewModel.loginState.collectAsState()
+    val userUiState by userViewModel.userUiState.collectAsState()
+
+    // 获取头像URL - 当用户状态变化时重新计算
+    val avatarUrl = remember(loginState.user, userUiState.currentUser) {
+        userViewModel.getCurrentUserAvatarUrl()
+    }
+
+    // 头像点击处理逻辑
+    val onAvatarClick = {
+        if (userViewModel.isLoggedIn()) {
+            // 已登录，跳转到"我的"页面
+            mainNavController.navigate(Screen.User.route) {
+                popUpTo(mainNavController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        } else {
+            // 未登录，跳转到登录页面
+            onLoginClick()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TangyuanTopBar(
                 currentScreen = currentScreen,
-                avatarUrl = "https://dogeoss.grtsinry43.com/img/author.jpeg",
+                avatarUrl = avatarUrl,
                 pageLevel = PageLevel.PRIMARY,
-                onAvatarClick = onLoginClick,
+                onAvatarClick = onAvatarClick,
                 onAnnouncementClick = {/* 公告点击事件 */ },
                 onPostClick = {/* 发表点击事件 */ }
             )
@@ -228,7 +258,22 @@ fun MainFlow(
             }
             composable(Screen.Topic.route) { Text(text = "侃一侃") }
             composable(Screen.Message.route) { Text(text = "消息") }
-            composable(Screen.User.route) { Text(text = "我的") }
+            composable(Screen.User.route) { 
+                UserScreen(
+                    onEditProfile = {
+                        // TODO: 导航到编辑个人资料页面
+                    },
+                    onPostManagement = {
+                        // TODO: 导航到帖子管理页面
+                    },
+                    onSettings = {
+                        // TODO: 导航到设置页面
+                    },
+                    onAbout = {
+                        // TODO: 导航到关于页面
+                    }
+                )
+            }
         }
     }
 }

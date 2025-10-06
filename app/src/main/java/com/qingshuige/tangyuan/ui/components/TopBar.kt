@@ -34,7 +34,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +42,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +56,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.qingshuige.tangyuan.R
+import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.navigation.Screen
+import com.qingshuige.tangyuan.network.TokenManager
 
 // 定义页面层级类型
 enum class PageLevel {
@@ -93,13 +97,17 @@ fun TangyuanTopBar(
                             )
                         }
                     }
-                    // 一级页面且不是我的页面显示头像
-                    pageLevel == PageLevel.PRIMARY && currentScreen != Screen.User -> {
+                    // 一级页面且不是我的页面显示头像或应用图标
+                    pageLevel == PageLevel.PRIMARY -> {
+                        val tokenManager = TokenManager()
+                        val isLoggedIn = tokenManager.token != null
+                        
                         IconButton(
                             onClick = { onAvatarClick?.invoke() },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            if (avatarUrl != null) {
+                            if (isLoggedIn && avatarUrl != null) {
+                                // 已登录且有头像URL，显示用户头像
                                 AsyncImage(
                                     model = avatarUrl,
                                     contentDescription = "头像",
@@ -111,16 +119,15 @@ fun TangyuanTopBar(
                                         // 处理图片加载错误
                                         error.result.throwable.printStackTrace()
                                     },
-                                    fallback = painterResource(android.R.drawable.ic_menu_gallery),
-                                    error = painterResource(android.R.drawable.ic_menu_gallery)
+                                    fallback = painterResource(R.drawable.ic_launcher_foreground),
+                                    error = painterResource(R.drawable.ic_launcher_foreground)
                                 )
                             } else {
+                                // 未登录或没有头像URL，显示应用图标
                                 Icon(
-                                    Icons.Filled.Person,
-                                    contentDescription = "头像",
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape),
+                                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                                    contentDescription = if (isLoggedIn) "头像" else "应用图标",
+                                    modifier = Modifier.size(32.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
