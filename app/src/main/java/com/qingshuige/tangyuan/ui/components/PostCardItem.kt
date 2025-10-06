@@ -136,7 +136,8 @@ fun PostCardItem(
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null
+    animatedContentScope: AnimatedContentScope? = null,
+    sharedElementPrefix: String = "postcard" // 添加前缀来区分不同位置的头像
 ) {
     Card(
         modifier = modifier
@@ -176,7 +177,8 @@ fun PostCardItem(
                 onAuthorClick = onAuthorClick,
                 onMoreClick = onMoreClick,
                 sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope
+                animatedContentScope = animatedContentScope,
+                sharedElementPrefix = sharedElementPrefix
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -225,7 +227,8 @@ private fun PostCardHeader(
     onAuthorClick: (Int) -> Unit,
     onMoreClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null
+    animatedContentScope: AnimatedContentScope? = null,
+    sharedElementPrefix: String = "postcard"
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -237,12 +240,11 @@ private fun PostCardHeader(
             contentDescription = "${postCard.authorName}的头像",
             modifier = Modifier
                 .size(40.dp)
-                .clip(CircleShape)
                 .let { mod ->
                     if (sharedTransitionScope != null && animatedContentScope != null) {
                         with(sharedTransitionScope) {
                             mod.sharedElement(
-                                rememberSharedContentState(key = "user_avatar_${postCard.authorId}"),
+                                rememberSharedContentState(key = "${sharedElementPrefix}_user_avatar_${postCard.authorId}"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
                                     tween(durationMillis = 400, easing = FastOutSlowInEasing)
@@ -250,7 +252,8 @@ private fun PostCardHeader(
                             )
                         }
                     } else mod
-                },
+                }
+                .clip(CircleShape),
             contentScale = ContentScale.Crop,
             onClick = { onAuthorClick(postCard.authorId) }
         )
@@ -269,7 +272,18 @@ private fun PostCardHeader(
                 fontFamily = TangyuanGeneralFontFamily,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "${sharedElementPrefix}_user_name_${postCard.authorId}"),
+                            animatedVisibilityScope = animatedContentScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                            }
+                        )
+                    }
+                } else Modifier
             )
             
             Text(

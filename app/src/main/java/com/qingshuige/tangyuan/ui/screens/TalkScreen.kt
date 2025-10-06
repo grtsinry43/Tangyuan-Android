@@ -156,7 +156,8 @@ private fun PostList(
                 onMoreClick = onMoreClick,
                 onImageClick = onImageClick,
                 sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope
+                animatedContentScope = animatedContentScope,
+                sharedElementPrefix = "talk_post_${postCard.postId}" // 使用帖子ID作为唯一前缀
             )
         }
         

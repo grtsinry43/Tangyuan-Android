@@ -234,7 +234,11 @@ private fun PostDetailContent(
                 CommentItem(
                     comment = comment,
                     onReplyToComment = onReplyToComment,
-                    onDeleteComment = onDeleteComment
+                    onDeleteComment = onDeleteComment,
+                    onAuthorClick = onAuthorClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope,
+                    sharedElementPrefix = "postdetail_comment_${comment.commentId}"
                 )
             }
             
@@ -291,7 +295,9 @@ private fun PostDetailCard(
             // 作者信息
             PostDetailHeader(
                 postCard = postCard,
-                onAuthorClick = onAuthorClick
+                onAuthorClick = onAuthorClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -354,10 +360,13 @@ private fun PostDetailCard(
 /**
  * 帖子详情头部
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PostDetailHeader(
     postCard: PostCard,
-    onAuthorClick: (Int) -> Unit
+    onAuthorClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedContentScope: AnimatedContentScope?
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -371,6 +380,19 @@ private fun PostDetailHeader(
             contentDescription = "${postCard.authorName}的头像",
             modifier = Modifier
                 .size(48.dp)
+                .let { mod ->
+                    if (sharedTransitionScope != null && animatedContentScope != null) {
+                        with(sharedTransitionScope) {
+                            mod.sharedElement(
+                                rememberSharedContentState(key = "user_avatar_${postCard.authorId}"),
+                                animatedVisibilityScope = animatedContentScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                }
+                            )
+                        }
+                    } else mod
+                }
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
@@ -383,7 +405,18 @@ private fun PostDetailHeader(
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = TangyuanGeneralFontFamily,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "user_name_${postCard.authorId}"),
+                            animatedVisibilityScope = animatedContentScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                            }
+                        )
+                    }
+                } else Modifier
             )
             
             if (postCard.authorBio.isNotBlank()) {

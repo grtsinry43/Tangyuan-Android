@@ -36,12 +36,17 @@ import com.qingshuige.tangyuan.utils.withPanguSpacing
 /**
  * 评论项组件
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CommentItem(
     comment: CommentCard,
     onReplyToComment: (CommentCard) -> Unit = {},
     onDeleteComment: (Int) -> Unit = {},
-    modifier: Modifier = Modifier
+    onAuthorClick: (Int) -> Unit = {},
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null,
+    sharedElementPrefix: String = "comment"
 ) {
     Card(
         modifier = modifier
@@ -62,7 +67,11 @@ fun CommentItem(
             CommentMainContent(
                 comment = comment,
                 onReplyToComment = onReplyToComment,
-                onDeleteComment = onDeleteComment
+                onDeleteComment = onDeleteComment,
+                onAuthorClick = onAuthorClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope,
+                sharedElementPrefix = sharedElementPrefix
             )
             
             // 回复列表
@@ -81,15 +90,26 @@ fun CommentItem(
 /**
  * 评论主体内容
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CommentMainContent(
     comment: CommentCard,
     onReplyToComment: (CommentCard) -> Unit,
-    onDeleteComment: (Int) -> Unit
+    onDeleteComment: (Int) -> Unit,
+    onAuthorClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null,
+    sharedElementPrefix: String = "comment"
 ) {
     Column {
         // 评论头部 - 用户信息
-        CommentHeader(comment = comment)
+        CommentHeader(
+            comment = comment,
+            onAuthorClick = onAuthorClick,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedContentScope = animatedContentScope,
+            sharedElementPrefix = sharedElementPrefix
+        )
         
         Spacer(modifier = Modifier.height(8.dp))
         
@@ -123,10 +143,18 @@ private fun CommentMainContent(
 /**
  * 评论头部 - 用户信息
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CommentHeader(comment: CommentCard) {
+private fun CommentHeader(
+    comment: CommentCard,
+    onAuthorClick: (Int) -> Unit = {},
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null,
+    sharedElementPrefix: String = "comment"
+) {
     Row(
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clickable { onAuthorClick(comment.authorId) }
     ) {
         // 用户头像
         AsyncImage(
@@ -137,6 +165,19 @@ private fun CommentHeader(comment: CommentCard) {
             contentDescription = "${comment.authorName}的头像",
             modifier = Modifier
                 .size(32.dp)
+                .let { mod ->
+                    if (sharedTransitionScope != null && animatedContentScope != null) {
+                        with(sharedTransitionScope) {
+                            mod.sharedElement(
+                                rememberSharedContentState(key = "${sharedElementPrefix}_user_avatar_${comment.authorId}"),
+                                animatedVisibilityScope = animatedContentScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                }
+                            )
+                        }
+                    } else mod
+                }
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
@@ -154,7 +195,18 @@ private fun CommentHeader(comment: CommentCard) {
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "${sharedElementPrefix}_user_name_${comment.authorId}"),
+                            animatedVisibilityScope = animatedContentScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                            }
+                        )
+                    }
+                } else Modifier
             )
         }
         

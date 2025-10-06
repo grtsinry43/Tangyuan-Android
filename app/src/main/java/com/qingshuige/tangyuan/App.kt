@@ -44,6 +44,9 @@ fun App() {
                     onImageClick = { postId, imageIndex ->
                         navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex))
                     },
+                    onAuthorClick = { authorId ->
+                        navController.navigate(Screen.UserDetail.createRoute(authorId))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable
                 )
@@ -173,6 +176,7 @@ fun MainFlow(
     onLoginClick: () -> Unit,
     onPostClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
+    onAuthorClick: (Int) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
@@ -216,9 +220,7 @@ fun MainFlow(
             composable(Screen.Talk.route) {
                 TalkScreen(
                     onPostClick = onPostClick,
-                    onAuthorClick = { authorId ->
-                        // TODO: 导航到用户详情页
-                    },
+                    onAuthorClick = onAuthorClick,
                     onImageClick = onImageClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope

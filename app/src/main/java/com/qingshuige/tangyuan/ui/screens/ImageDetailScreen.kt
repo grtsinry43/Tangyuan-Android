@@ -113,7 +113,9 @@ fun ImageDetailScreen(
                 BottomContentOverlay(
                     postCard = postCard,
                     onAuthorClick = onAuthorClick,
-                    onSwitchToTextMode = onSwitchToTextMode
+                    onSwitchToTextMode = onSwitchToTextMode,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
                 )
             }
         }
@@ -313,11 +315,14 @@ private fun ZoomableImage(
 /**
  * 底部内容遮罩
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun BottomContentOverlay(
     postCard: PostCard,
     onAuthorClick: (Int) -> Unit,
-    onSwitchToTextMode: () -> Unit
+    onSwitchToTextMode: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedContentScope: AnimatedContentScope?
 ) {
     var offsetY by remember { mutableFloatStateOf(0f) }
     val swipeThreshold = -100f // 上滑超过100px触发切换
@@ -356,7 +361,9 @@ private fun BottomContentOverlay(
             // 作者信息
             PostAuthorInfo(
                 postCard = postCard,
-                onAuthorClick = onAuthorClick
+                onAuthorClick = onAuthorClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -424,10 +431,13 @@ private fun BottomContentOverlay(
 /**
  * 作者信息组件
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PostAuthorInfo(
     postCard: PostCard,
-    onAuthorClick: (Int) -> Unit
+    onAuthorClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedContentScope: AnimatedContentScope?
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -441,6 +451,19 @@ private fun PostAuthorInfo(
             contentDescription = "${postCard.authorName}的头像",
             modifier = Modifier
                 .size(48.dp)
+                .let { mod ->
+                    if (sharedTransitionScope != null && animatedContentScope != null) {
+                        with(sharedTransitionScope) {
+                            mod.sharedElement(
+                                rememberSharedContentState(key = "user_avatar_${postCard.authorId}"),
+                                animatedVisibilityScope = animatedContentScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                }
+                            )
+                        }
+                    } else mod
+                }
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
@@ -453,7 +476,18 @@ private fun PostAuthorInfo(
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = TangyuanGeneralFontFamily,
                 color = Color.White,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "user_name_${postCard.authorId}"),
+                            animatedVisibilityScope = animatedContentScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                            }
+                        )
+                    }
+                } else Modifier
             )
             
             if (postCard.authorBio.isNotBlank()) {

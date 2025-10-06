@@ -4,6 +4,8 @@ import com.qingshuige.tangyuan.api.ApiInterface
 import com.qingshuige.tangyuan.model.CreateUserDto
 import com.qingshuige.tangyuan.model.LoginDto
 import com.qingshuige.tangyuan.model.User
+import com.qingshuige.tangyuan.model.PostBody
+import com.qingshuige.tangyuan.model.Category
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.awaitResponse
@@ -70,6 +72,26 @@ class UserRepository @Inject constructor(
                 ?: emit(emptyList())
         } else {
             throw Exception("Failed to get user posts: ${response.message()}")
+        }
+    }
+    
+    fun getPostBody(postId: Int): Flow<PostBody> = flow {
+        val response = apiInterface.getPostBody(postId).awaitResponse()
+        if (response.isSuccessful) {
+            response.body()?.let { emit(it) } 
+                ?: throw Exception("Post body not found")
+        } else {
+            throw Exception("Failed to get post body: ${response.message()}")
+        }
+    }
+    
+    fun getCategory(categoryId: Int): Flow<Category> = flow {
+        val response = apiInterface.getCategory(categoryId).awaitResponse()
+        if (response.isSuccessful) {
+            response.body()?.let { emit(it) } 
+                ?: throw Exception("Category not found")
+        } else {
+            throw Exception("Failed to get category: ${response.message()}")
         }
     }
 }
