@@ -161,13 +161,26 @@ class PostViewModel @Inject constructor(
         viewModelScope.launch {
             _postUiState.value = _postUiState.value.copy(isCreating = true, error = null)
             try {
-                // TODO: Call repository createPost method
-                // val postId = postRepository.createPostMetadata(metadata)
-                // postRepository.createPostBody(body.copy(postId = postId))
-                // _postUiState.value = _postUiState.value.copy(
-                //     isCreating = false,
-                //     createSuccess = true
-                // )
+                var postId: Int? = null
+                
+                postRepository.createPostMetadata(metadata)
+                    .catch { e -> throw e }
+                    .collect { id ->
+                        postId = id
+                        
+                        postRepository.createPostBody(body.copy(postId = id))
+                            .catch { e -> throw e }
+                            .collect { success ->
+                                if (success) {
+                                    _postUiState.value = _postUiState.value.copy(
+                                        isCreating = false,
+                                        createSuccess = true
+                                    )
+                                } else {
+                                    throw Exception("Failed to create post body")
+                                }
+                            }
+                    }
             } catch (e: Exception) {
                 _postUiState.value = _postUiState.value.copy(
                     isCreating = false,

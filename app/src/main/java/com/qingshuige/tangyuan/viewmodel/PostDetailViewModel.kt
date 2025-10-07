@@ -7,6 +7,7 @@ import com.qingshuige.tangyuan.model.CommentCard
 import com.qingshuige.tangyuan.model.CreateCommentDto
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.PostDetailState
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostDetailRepository
 import com.qingshuige.tangyuan.utils.ImageSaveUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,6 +25,8 @@ class PostDetailViewModel @Inject constructor(
     private val postDetailRepository: PostDetailRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+    
+    private val tokenManager = TokenManager()
     
     private val _state = MutableStateFlow(PostDetailState())
     val state: StateFlow<PostDetailState> = _state.asStateFlow()
@@ -33,9 +37,9 @@ class PostDetailViewModel @Inject constructor(
     /**
      * 加载帖子详情和评论 - 分离加载，先加载帖子再加载评论
      */
-    fun loadPostDetail(postId: Int, userId: Int = 0) {
+    fun loadPostDetail(postId: Int) {
         currentPostId = postId
-        currentUserId = userId
+        currentUserId = tokenManager.getUserIdFromToken() ?: 0
         
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
@@ -57,7 +61,7 @@ class PostDetailViewModel @Inject constructor(
                         )
                         
                         // 然后异步加载评论
-                        loadComments(postId, userId)
+                        loadComments(postId, currentUserId)
                     }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -133,6 +137,7 @@ class PostDetailViewModel @Inject constructor(
             
             val createCommentDto = CreateCommentDto(
                 postId = currentPostId.toLong(),
+                commentDateTime = Date(),
                 content = content,
                 parentCommentId = if (parentCommentId == 0) null else parentCommentId.toLong(),
                 userId = currentUserId.toLong()
