@@ -23,12 +23,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,11 +42,10 @@ import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
-import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.PostDetailViewModel
-import kotlin.math.max
-import kotlin.math.min
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * 图片详情页面 - 以图片为主的展示界面
@@ -60,8 +63,15 @@ fun ImageDetailScreen(
     animatedContentScope: AnimatedContentScope? = null
 ) {
     val state by viewModel.state.collectAsState()
-    
-    // 加载帖子详情
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.saveMessage) {
+        state.saveMessage?.let { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+            viewModel.clearSaveMessage()
+        }
+    }
+
     LaunchedEffect(postId) {
         viewModel.loadPostDetail(postId)
     }
@@ -88,8 +98,14 @@ fun ImageDetailScreen(
                 ImageDetailTopBar(
                     onBackClick = onBackClick,
                     currentIndex = pagerState.currentPage + 1,
-                    totalCount = imageUUIDs.size
+                    totalCount = imageUUIDs.size,
+                    onSaveClick = {
+                        val currentImageUrl =
+                            "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[pagerState.currentPage]}.jpg"
+                        viewModel.saveCurrentImage(currentImageUrl)
+                    }
                 )
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 // 图片轮播区域
                 Box(
@@ -108,6 +124,8 @@ fun ImageDetailScreen(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 // 底部内容区域（模糊遮罩）
                 BottomContentOverlay(
@@ -118,14 +136,20 @@ fun ImageDetailScreen(
                     animatedContentScope = animatedContentScope
                 )
             }
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+            )
         }
     }
-    
+
     // 加载状态
     if (state.isLoading && state.postCard == null) {
         LoadingContent()
     }
-    
+
     // 错误状态
     state.error?.let { error ->
         ErrorContent(
@@ -160,7 +184,7 @@ private fun BackgroundBlurredImage(
             alpha = 0.3f
         )
     }
-    
+
     // 渐变遮罩
     Box(
         modifier = Modifier
@@ -185,7 +209,8 @@ private fun BackgroundBlurredImage(
 private fun ImageDetailTopBar(
     onBackClick: () -> Unit,
     currentIndex: Int,
-    totalCount: Int
+    totalCount: Int,
+    onSaveClick: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -206,15 +231,22 @@ private fun ImageDetailTopBar(
                 )
             }
         },
+        actions = {
+            // 保存图片按钮
+            IconButton(onClick = onSaveClick) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = "保存图片",
+                    tint = Color.White
+                )
+            }
+        },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent
         )
     )
 }
 
-/**
- * 图片轮播组件
- */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ImagePager(
@@ -224,9 +256,13 @@ private fun ImagePager(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
+    // 用于控制Pager是否允许左右滑动
+    var canScroll by remember { mutableStateOf(true) }
+
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        userScrollEnabled = canScroll // ✅ 当缩放时禁用Pager滑动
     ) { page ->
         ZoomableImage(
             imageUrl = "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[page]}.jpg",
@@ -234,14 +270,14 @@ private fun ImagePager(
             imageIndex = page,
             contentDescription = "图片 ${page + 1}",
             sharedTransitionScope = sharedTransitionScope,
-            animatedContentScope = animatedContentScope
+            animatedContentScope = animatedContentScope,
+            onScaleChanged = { newScale ->
+                canScroll = newScale <= 1.01f // 缩放>1时禁用pager滑动
+            }
         )
     }
 }
 
-/**
- * 可缩放的图片组件
- */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ZoomableImage(
@@ -250,23 +286,45 @@ private fun ZoomableImage(
     imageIndex: Int,
     contentDescription: String,
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null
+    animatedContentScope: AnimatedContentScope? = null,
+    onScaleChanged: (Float) -> Unit = {}
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
-    
-    val transformableState = rememberTransformableState { zoomChange, offsetChange, _ ->
-        scale = (scale * zoomChange).coerceIn(1f, 5f)
-        val maxX = (scale - 1) * 300
-        val maxY = (scale - 1) * 300
-        offset = Offset(
-            x = (offset.x + offsetChange.x).coerceIn(-maxX, maxX),
-            y = (offset.y + offsetChange.y).coerceIn(-maxY, maxY)
-        )
-    }
-    
+
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            // ✅ 缩放 & 平移逻辑
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    val newScale = (scale * zoom).coerceIn(1f, 5f)
+                    val maxX = (newScale - 1f) * 400f
+                    val maxY = (newScale - 1f) * 400f
+                    val newOffset = Offset(
+                        x = (offset.x + pan.x).coerceIn(-maxX, maxX),
+                        y = (offset.y + pan.y).coerceIn(-maxY, maxY)
+                    )
+
+                    scale = newScale
+                    offset = newOffset
+                    onScaleChanged(newScale)
+                }
+            }
+            // ✅ 双击缩放
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        if (scale > 1f) {
+                            scale = 1f
+                            offset = Offset.Zero
+                        } else {
+                            scale = 2f
+                        }
+                        onScaleChanged(scale)
+                    }
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
@@ -275,42 +333,33 @@ private fun ZoomableImage(
                 .crossfade(true)
                 .build(),
             contentDescription = contentDescription,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
-                .let { mod ->
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offset.x
+                    translationY = offset.y
+                }
+                .then(
                     if (sharedTransitionScope != null && animatedContentScope != null) {
                         with(sharedTransitionScope) {
-                            mod.sharedElement(
+                            Modifier.sharedElement(
                                 rememberSharedContentState(key = "post_image_${postId}_${imageIndex}"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
                                     tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                                },
-                                placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
-                                renderInOverlayDuringTransition = false
+                                }
                             )
                         }
-                    } else mod
-                }
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
+                    } else Modifier
                 )
-                .transformable(state = transformableState)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onDoubleTap = {
-                            scale = if (scale > 1f) 1f else 2f
-                            offset = Offset.Zero
-                        }
-                    )
-                },
-            contentScale = ContentScale.Fit
         )
     }
 }
+
+
 
 /**
  * 底部内容遮罩
@@ -326,7 +375,7 @@ private fun BottomContentOverlay(
 ) {
     var offsetY by remember { mutableFloatStateOf(0f) }
     val swipeThreshold = -100f // 上滑超过100px触发切换
-    
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -358,17 +407,13 @@ private fun BottomContentOverlay(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 作者信息
             PostAuthorInfo(
                 postCard = postCard,
                 onAuthorClick = onAuthorClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedContentScope = animatedContentScope
             )
-            
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // 文章内容
             Text(
                 text = postCard.textContent.withPanguSpacing(),
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -379,10 +424,7 @@ private fun BottomContentOverlay(
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis
             )
-            
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // 分类和时间
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -401,7 +443,6 @@ private fun BottomContentOverlay(
                         fontWeight = FontWeight.Medium
                     )
                 }
-                
                 Text(
                     text = postCard.getTimeDisplayText(),
                     style = MaterialTheme.typography.bodySmall,
@@ -409,10 +450,7 @@ private fun BottomContentOverlay(
                     color = Color.White.copy(alpha = 0.8f)
                 )
             }
-            
             Spacer(modifier = Modifier.height(20.dp))
-            
-            // 上滑提示 - 放在最下面居中
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -467,9 +505,7 @@ private fun PostAuthorInfo(
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
-        
         Spacer(modifier = Modifier.width(12.dp))
-        
         Column {
             Text(
                 text = postCard.authorName.withPanguSpacing(),
@@ -489,7 +525,6 @@ private fun PostAuthorInfo(
                     }
                 } else Modifier
             )
-            
             if (postCard.authorBio.isNotBlank()) {
                 Text(
                     text = postCard.authorBio.withPanguSpacing(),
@@ -557,7 +592,6 @@ private fun ErrorContent(
                 tint = Color.White,
                 modifier = Modifier.size(48.dp)
             )
-            
             Text(
                 text = "加载失败",
                 style = MaterialTheme.typography.headlineSmall,
@@ -565,7 +599,6 @@ private fun ErrorContent(
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold
             )
-            
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
@@ -573,7 +606,6 @@ private fun ErrorContent(
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
             )
-            
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(

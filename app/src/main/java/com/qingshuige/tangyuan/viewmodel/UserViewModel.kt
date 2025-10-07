@@ -150,6 +150,7 @@ class UserViewModel @Inject constructor(
                     val token = result["token"]
                     if (token != null) {
                         tokenManager.token = token
+                        println("DEBUG: 手动登录成功，已保存token: ${token.take(20)}...")
                     }
                     // 登录成功，保存账号密码用于自动登录
                     tokenManager.setPhoneNumberAndPassword(
@@ -162,8 +163,13 @@ class UserViewModel @Inject constructor(
                         isLoggedIn = true,
                     )
                     
-                    // 登录成功后获取用户信息
-                    getCurrentUserFromToken()
+                    // 确保token保存后再获取用户信息
+                    if (token != null) {
+                        println("DEBUG: 手动登录后开始获取用户信息")
+                        getCurrentUserFromToken()
+                    } else {
+                        println("DEBUG: 手动登录失败，未获取到token")
+                    }
                 }
         }
     }

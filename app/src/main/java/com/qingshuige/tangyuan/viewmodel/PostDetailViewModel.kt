@@ -1,5 +1,6 @@
 package com.qingshuige.tangyuan.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.qingshuige.tangyuan.model.CommentCard
@@ -7,7 +8,9 @@ import com.qingshuige.tangyuan.model.CreateCommentDto
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.PostDetailState
 import com.qingshuige.tangyuan.repository.PostDetailRepository
+import com.qingshuige.tangyuan.utils.ImageSaveUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +20,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PostDetailViewModel @Inject constructor(
-    private val postDetailRepository: PostDetailRepository
+    private val postDetailRepository: PostDetailRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(PostDetailState())
@@ -130,7 +134,8 @@ class PostDetailViewModel @Inject constructor(
             val createCommentDto = CreateCommentDto(
                 postId = currentPostId.toLong(),
                 content = content,
-                parentCommentId = if (parentCommentId == 0) null else parentCommentId.toLong()
+                parentCommentId = if (parentCommentId == 0) null else parentCommentId.toLong(),
+                userId = currentUserId.toLong()
             )
             
             postDetailRepository.createComment(createCommentDto)
@@ -283,5 +288,37 @@ class PostDetailViewModel @Inject constructor(
         _state.value = PostDetailState()
         currentPostId = 0
         currentUserId = 0
+    }
+    
+    /**
+     * 保存当前图片到本地
+     */
+    fun saveCurrentImage(imageUrl: String) {
+        viewModelScope.launch {
+            try {
+                val result = ImageSaveUtils.saveImageToGallery(context, imageUrl)
+                result.onSuccess { message ->
+                    _state.value = _state.value.copy(
+                        error = null,
+                        saveMessage = message
+                    )
+                }.onFailure { exception ->
+                    _state.value = _state.value.copy(
+                        error = exception.message ?: "保存图片失败"
+                    )
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = e.message ?: "保存图片失败"
+                )
+            }
+        }
+    }
+    
+    /**
+     * 清除保存消息
+     */
+    fun clearSaveMessage() {
+        _state.value = _state.value.copy(saveMessage = null)
     }
 }

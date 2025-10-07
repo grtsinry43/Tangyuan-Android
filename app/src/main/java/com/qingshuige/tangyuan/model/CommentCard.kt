@@ -91,7 +91,10 @@ data class PostDetailState(
     // 评论输入状态
     val isCreatingComment: Boolean = false,
     val commentError: String? = null,
-    val replyToComment: CommentCard? = null
+    val replyToComment: CommentCard? = null,
+    
+    // 图片保存状态
+    val saveMessage: String? = null
 )
 
 /**

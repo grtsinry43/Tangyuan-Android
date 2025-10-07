@@ -530,7 +530,7 @@ private fun CommentSectionHeader(commentCount: Int, isLoading: Boolean = false) 
             Text(
                 text = "评论 ($commentCount)",
                 style = MaterialTheme.typography.titleMedium,
-                fontFamily = LiteraryFontFamily,
+                fontFamily = TangyuanGeneralFontFamily,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold
             )

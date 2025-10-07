@@ -17,11 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -32,6 +34,7 @@ import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
 import com.qingshuige.tangyuan.utils.withPanguSpacing
+import java.util.Date
 
 /**
  * 评论项组件
@@ -299,7 +302,7 @@ private fun CommentActions(
  */
 @Composable
 private fun CommentActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     count: Int = 0,
     text: String = "",
     isActive: Boolean,
@@ -535,7 +538,7 @@ fun CommentInputBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                verticalAlignment = Alignment.Bottom,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // 输入框
@@ -545,7 +548,8 @@ fun CommentInputBar(
                     modifier = Modifier.weight(1f),
                     placeholder = {
                         Text(
-                            text = if (replyToComment != null) "回复 ${replyToComment.authorName}" else "说点什么...",
+                            text = if (replyToComment != null) "回复 ${replyToComment.authorName}" + ": " + {replyToComment.content.take(20) + if (replyToComment.content.length > 20) "..." else ""}()
+                                    else "说点什么...",
                             fontFamily = LiteraryFontFamily,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -602,6 +606,25 @@ fun CommentInputBar(
     }
 }
 
+@Preview
+@Composable
+private fun CommentInputBarPreview() {
+    CommentInputBar(
+        isCreating = false,
+        replyToComment = CommentCard(
+            commentId = 1,
+            postId = 1,
+            content = "这是一个回复评论的示例。",
+            commentDateTime = Date(),
+            authorId = 1,
+            authorName = "示例用户",
+            authorAvatar = "avatar1"
+        ),
+        onSendComment = {},
+        onCancelReply = {}
+    )
+}
+
 /**
  * 回复指示器
  */
@@ -632,7 +655,7 @@ private fun ReplyIndicator(
             Text(
                 text = "回复 ${comment.authorName}",
                 style = MaterialTheme.typography.bodySmall,
-                fontFamily = LiteraryFontFamily,
+                fontFamily = TangyuanGeneralFontFamily,
                 color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.weight(1f)
             )
