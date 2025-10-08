@@ -32,7 +32,6 @@ import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.model.CommentCard
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
-import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import java.util.Date
 
@@ -123,6 +122,7 @@ private fun CommentMainContent(
                 lineHeight = 20.sp
             ),
             fontFamily = LiteraryFontFamily,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
         
@@ -331,7 +331,7 @@ private fun CommentActionButton(
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.labelSmall,
-                fontFamily = LiteraryFontFamily,
+                fontFamily = TangyuanGeneralFontFamily,
                 color = color,
                 fontSize = 11.sp
             )
@@ -342,7 +342,7 @@ private fun CommentActionButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
-                fontFamily = LiteraryFontFamily,
+                fontFamily = TangyuanGeneralFontFamily,
                 color = color,
                 fontSize = 11.sp
             )
@@ -449,6 +449,7 @@ private fun ReplyItem(
                 lineHeight = 18.sp
             ),
             fontFamily = LiteraryFontFamily,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
         
@@ -551,7 +552,9 @@ fun CommentInputBar(
                             text = if (replyToComment != null) "回复 ${replyToComment.authorName}" + ": " + {replyToComment.content.take(20) + if (replyToComment.content.length > 20) "..." else ""}()
                                     else "说点什么...",
                             fontFamily = LiteraryFontFamily,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = 0.5f
+                            )
                         )
                     },
                     shape = RoundedCornerShape(20.dp),

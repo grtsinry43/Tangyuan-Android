@@ -137,8 +137,9 @@ private fun PostDetailTopBar(
     TopAppBar(
         title = {
             Text(
-                text = "详情",
-                fontFamily = LiteraryFontFamily,
+                text = "帖子详情",
+                fontFamily = TangyuanGeneralFontFamily,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         },
@@ -309,6 +310,7 @@ private fun PostDetailCard(
                     lineHeight = 28.sp
                 ),
                 fontFamily = LiteraryFontFamily,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             

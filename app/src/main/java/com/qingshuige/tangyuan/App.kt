@@ -21,6 +21,7 @@ import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.AboutScreen
+import com.qingshuige.tangyuan.ui.screens.DesignSystemScreen
 import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
 import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
@@ -28,6 +29,10 @@ import com.qingshuige.tangyuan.ui.screens.LoginScreen
 import com.qingshuige.tangyuan.ui.screens.UserDetailScreen
 import com.qingshuige.tangyuan.ui.screens.UserScreen
 import com.qingshuige.tangyuan.viewmodel.UserViewModel
+
+// 自定义带回弹效果的easing - 快速流畅
+private val QuickSpringEasing = CubicBezierEasing(0.34f, 1.3f, 0.64f, 1.0f)
+private val QuickEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -53,7 +58,8 @@ fun App() {
                     },
                     onAboutClick = { navController.navigate(Screen.About.route) },
                     sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@composable
+                    animatedContentScope = this@composable,
+                    onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) }
                 )
             }
 
@@ -63,8 +69,8 @@ fun App() {
                     slideInVertically(
                         initialOffsetY = { it },
                         animationSpec = tween(
-                            durationMillis = 800,
-                            easing = FastOutSlowInEasing
+                            durationMillis = 350,
+                            easing = QuickSpringEasing
                         )
                     )
                 },
@@ -72,8 +78,8 @@ fun App() {
                     slideOutVertically(
                         targetOffsetY = { it },
                         animationSpec = tween(
-                            durationMillis = 600,
-                            easing = FastOutSlowInEasing
+                            durationMillis = 250,
+                            easing = QuickEasing
                         )
                     )
                 },
@@ -81,8 +87,8 @@ fun App() {
                     slideOutVertically(
                         targetOffsetY = { it },
                         animationSpec = tween(
-                            durationMillis = 600,
-                            easing = FastOutSlowInEasing
+                            durationMillis = 250,
+                            easing = QuickEasing
                         )
                     )
                 }
@@ -90,12 +96,44 @@ fun App() {
                 LoginScreen(navController = navController)
             }
 
-            // 帖子详情页
+            // 帖子详情页 - 使用淡入淡出避免与共享元素冲突
             composable(
                 route = Screen.PostDetail.route,
                 arguments = listOf(
                     navArgument("postId") { type = NavType.IntType }
-                )
+                ),
+                enterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                }
             ) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getInt("postId") ?: 0
 
@@ -118,13 +156,45 @@ fun App() {
                 )
             }
 
-            // 图片详情页
+            // 图片详情页 - 使用淡入淡出避免与共享元素冲突
             composable(
                 route = Screen.ImageDetail.route,
                 arguments = listOf(
                     navArgument("postId") { type = NavType.IntType },
                     navArgument("imageIndex") { type = NavType.IntType }
-                )
+                ),
+                enterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                }
             ) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getInt("postId") ?: 0
                 val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
@@ -149,12 +219,44 @@ fun App() {
                 )
             }
 
-            // 用户详情页
+            // 用户详情页 - 使用淡入淡出避免与共享元素冲突
             composable(
                 route = Screen.UserDetail.route,
                 arguments = listOf(
                     navArgument("userId") { type = NavType.IntType }
-                )
+                ),
+                enterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                }
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getInt("userId") ?: 0
 
@@ -164,6 +266,14 @@ fun App() {
                     onPostClick = { postId ->
                         navController.navigate(Screen.PostDetail.createRoute(postId))
                     },
+                    onImageClick = { postId, imageIndex ->
+                        navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex)) {
+                            popUpTo(Screen.PostDetail.createRoute(postId)) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
                     onFollowClick = {
                         // TODO: 实现关注功能
                     },
@@ -172,8 +282,90 @@ fun App() {
                 )
             }
 
-            composable(Screen.About.route) {
+            composable(
+                route = Screen.About.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickSpringEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = QuickEasing
+                        )
+                    )
+                }
+            ) {
                 AboutScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.DesignSystem.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickSpringEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = QuickEasing
+                        )
+                    )
+                }
+            ) {
+                DesignSystemScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -189,6 +381,7 @@ fun MainFlow(
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
     onAuthorClick: (Int) -> Unit = {},
     onAboutClick: () -> Unit,
+    onDesignSystemClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
     userViewModel: UserViewModel = hiltViewModel()
@@ -254,7 +447,63 @@ fun MainFlow(
         NavHost(
             navController = mainNavController,
             startDestination = Screen.Talk.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { it / 2 },
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                ) + fadeIn(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { -it / 2 },
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                ) + fadeOut(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { -it / 2 },
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                ) + fadeIn(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { it / 2 },
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                ) + fadeOut(
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = QuickEasing
+                    )
+                )
+            }
         ) {
             composable(Screen.Talk.route) {
                 TalkScreen(
@@ -278,7 +527,8 @@ fun MainFlow(
                     onSettings = {
                         // TODO: 导航到设置页面
                     },
-                    onAbout = onAboutClick
+                    onAbout = onAboutClick,
+                    onDesignSystem = onDesignSystemClick,
                 )
             }
         }

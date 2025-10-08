@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DesignServices
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -76,6 +77,7 @@ fun UserScreen(
     onPostManagement: () -> Unit = {},
     onSettings: () -> Unit = {},
     onAbout: () -> Unit = {},
+    onDesignSystem: () -> Unit = {},
     userViewModel: UserViewModel = hiltViewModel()
 ) {
     val loginState by userViewModel.loginState.collectAsState()
@@ -104,11 +106,18 @@ fun UserScreen(
             MenuSection(
                 onPostManagement = onPostManagement,
                 onSettings = onSettings,
-                onAbout = onAbout
+                onAbout = onAbout,
+                onDesignSystem = onDesignSystem
             )
         } else {
             // 未登录状态
             NotLoggedInContent()
+            Spacer(modifier = Modifier.height(24.dp))
+            MenuSectionNotLogin(
+                onSettings = onSettings,
+                onAbout = onAbout,
+                onDesignSystem = onDesignSystem
+            )
         }
     }
 }
@@ -396,6 +405,7 @@ private fun VerticalDivider() {
 @Composable
 private fun MenuSection(
     onPostManagement: () -> Unit,
+    onDesignSystem: () -> Unit,
     onSettings: () -> Unit,
     onAbout: () -> Unit
 ) {
@@ -431,6 +441,76 @@ private fun MenuSection(
                 title = "设置",
                 subtitle = "个性化设置和隐私选项",
                 onClick = onSettings
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
+
+            MenuItem(
+                icon = Icons.Default.DesignServices,
+                title = "关于糖原设计系统",
+                subtitle = "了解 App 的设计系统与排版规范",
+                onClick = onDesignSystem,
+                showDivider = false
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
+
+            MenuItem(
+                icon = Icons.Default.Info,
+                title = "关于",
+                subtitle = "版本信息和帮助",
+                onClick = onAbout,
+                showDivider = false
+            )
+        }
+    }
+}
+
+@Composable
+private fun MenuSectionNotLogin(
+    onSettings: () -> Unit,
+    onDesignSystem: () -> Unit,
+    onAbout: () -> Unit
+) {
+    Text(
+        text = "功能菜单",
+        style = MaterialTheme.typography.titleMedium,
+        fontFamily = TangyuanGeneralFontFamily,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+    )
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            MenuItem(
+                icon = Icons.Default.Settings,
+                title = "设置",
+                subtitle = "个性化设置和隐私选项",
+                onClick = onSettings
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
+
+            MenuItem(
+                icon = Icons.Default.DesignServices,
+                title = "关于糖原设计系统",
+                subtitle = "了解 App 的设计系统与排版规范",
+                onClick = onDesignSystem,
+                showDivider = false
             )
 
             HorizontalDivider(

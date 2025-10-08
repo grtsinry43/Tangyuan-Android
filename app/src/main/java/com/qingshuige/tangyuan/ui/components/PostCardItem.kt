@@ -322,7 +322,7 @@ private fun PostCardContent(postCard: PostCard) {
                 lineHeight = 22.sp
             ),
             fontFamily = LiteraryFontFamily,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 6,
             overflow = TextOverflow.Ellipsis

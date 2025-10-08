@@ -44,6 +44,7 @@ fun UserDetailScreen(
     userId: Int,
     onBackClick: () -> Unit,
     onPostClick: (Int) -> Unit = {},
+    onImageClick: (postId: Int, imageIndex: Int) -> Unit = { _, _ -> },
     onFollowClick: () -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
@@ -153,7 +154,7 @@ fun UserDetailScreen(
                                 onBookmarkClick = { /* TODO: 实现收藏 */ },
                                 onMoreClick = { /* TODO: 实现更多操作 */ },
                                 onImageClick = { postId, imageIndex ->
-                                    // TODO: 实现图片点击
+                                    onImageClick(postId, imageIndex)
                                 },
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedContentScope = animatedContentScope,
@@ -189,14 +190,14 @@ private fun UserDetailTopBar(
             if (isLoading) {
                 Text(
                     text = "用户详情",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontFamily = TangyuanGeneralFontFamily,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             } else {
                 Text(
                     text = if (userName.isNotBlank()) "用户详情 · $userName" else "用户详情",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontFamily = TangyuanGeneralFontFamily,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
