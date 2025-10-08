@@ -139,7 +139,7 @@ class PostDetailViewModel @Inject constructor(
                 postId = currentPostId.toLong(),
                 commentDateTime = Date(),
                 content = content,
-                parentCommentId = if (parentCommentId == 0) null else parentCommentId.toLong(),
+                parentCommentId = if (parentCommentId == 0) 0L else parentCommentId.toLong(),
                 userId = currentUserId.toLong()
             )
             

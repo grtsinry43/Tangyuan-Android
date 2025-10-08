@@ -21,6 +21,7 @@ import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.AboutScreen
+import com.qingshuige.tangyuan.ui.screens.CreatePostScreen
 import com.qingshuige.tangyuan.ui.screens.DesignSystemScreen
 import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
 import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
@@ -57,6 +58,7 @@ fun App() {
                         navController.navigate(Screen.UserDetail.createRoute(authorId))
                     },
                     onAboutClick = { navController.navigate(Screen.About.route) },
+                    onCreatePostClick = { navController.navigate(Screen.CreatePost.route) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable,
                     onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) }
@@ -369,6 +371,57 @@ fun App() {
                     onBackClick = { navController.popBackStack() }
                 )
             }
+
+
+            composable(
+                route = Screen.CreatePost.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickSpringEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = QuickEasing
+                        )
+                    )
+                }
+            ) {
+                CreatePostScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onPostSuccess = {
+                        // 发帖成功后返回首页
+                        navController.popBackStack("main", false)
+                    }
+                )
+            }
         }
     }
 }
@@ -382,6 +435,7 @@ fun MainFlow(
     onAuthorClick: (Int) -> Unit = {},
     onAboutClick: () -> Unit,
     onDesignSystemClick: () -> Unit,
+    onCreatePostClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
     userViewModel: UserViewModel = hiltViewModel()
@@ -429,7 +483,7 @@ fun MainFlow(
                 pageLevel = PageLevel.PRIMARY,
                 onAvatarClick = onAvatarClick,
                 onAnnouncementClick = {/* 公告点击事件 */ },
-                onPostClick = {/* 发表点击事件 */ }
+                onPostClick = onCreatePostClick
             )
         },
         bottomBar = {
