@@ -547,17 +547,17 @@ private fun MenuSectionNotLogin(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            MenuItem(
-                icon = Icons.Default.Settings,
-                title = "设置",
-                subtitle = "个性化设置和隐私选项",
-                onClick = onSettings
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-            )
+//            MenuItem(
+//                icon = Icons.Default.Settings,
+//                title = "设置",
+//                subtitle = "个性化设置和隐私选项",
+//                onClick = onSettings
+//            )
+//
+//            HorizontalDivider(
+//                modifier = Modifier.padding(horizontal = 16.dp),
+//                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+//            )
 
             MenuItem(
                 icon = Icons.Default.DesignServices,

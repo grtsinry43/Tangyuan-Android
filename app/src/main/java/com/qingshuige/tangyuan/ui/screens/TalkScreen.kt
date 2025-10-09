@@ -32,6 +32,7 @@ fun TalkScreen(
     onPostClick: (Int) -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
+    onCategoryClick: (Int) -> Unit = {},
     viewModel: TalkViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -103,6 +104,7 @@ fun TalkScreen(
                             // TODO: 显示更多操作菜单
                         },
                         onImageClick = onImageClick,
+                        onCategoryClick = onCategoryClick,
                         onErrorDismiss = viewModel::clearError,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedContentScope = animatedContentScope
@@ -132,9 +134,11 @@ fun PostList(
     onBookmarkClick: (Int) -> Unit,
     onMoreClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit,
+    onCategoryClick: (Int) -> Unit = {},
     onErrorDismiss: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null
+    animatedContentScope: AnimatedContentScope? = null,
+    showSectionBadge: Boolean = false
 ) {
     LazyColumn(
         state = listState,
@@ -155,6 +159,8 @@ fun PostList(
                 onBookmarkClick = onBookmarkClick,
                 onMoreClick = onMoreClick,
                 onImageClick = onImageClick,
+                onCategoryClick = onCategoryClick,
+                showSectionBadge = showSectionBadge,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedContentScope = animatedContentScope,
                 sharedElementPrefix = "talk_post_${postCard.postId}" // 使用帖子ID作为唯一前缀

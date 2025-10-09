@@ -1,5 +1,9 @@
 package com.qingshuige.tangyuan.ui.screens
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,12 +53,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,6 +72,7 @@ import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
+import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.viewmodel.EditProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -75,6 +85,46 @@ fun EditProfileScreen(
     animatedContentScope: AnimatedContentScope? = null
 ) {
     val uiState by editProfileViewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // 图片选择器
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            editProfileViewModel.uploadAvatar(context, it)
+        }
+    }
+
+    // 权限请求 launcher (仅用于 Android 12 及以下)
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            imagePickerLauncher.launch(
+                androidx.activity.result.PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        } else {
+            UIUtils.showError("需要存储权限才能选择图片")
+        }
+    }
+
+    // 请求图片选择的函数
+    val requestImagePicker: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ 使用 Photo Picker，不需要权限
+            imagePickerLauncher.launch(
+                androidx.activity.result.PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        } else {
+            // Android 12 及以下需要请求权限
+            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+    }
 
     // 处理保存成功
     LaunchedEffect(uiState.saveSuccess) {
@@ -153,7 +203,9 @@ fun EditProfileScreen(
                     avatarUrl = uiState.currentUser?.let {
                         "${TangyuanApplication.instance.bizDomain}images/${it.avatarGuid}.jpg"
                     },
-                    onAvatarClick = { /* TODO: 实现头像选择 */ },
+                    newAvatarGuid = uiState.newAvatarGuid,
+                    isUploading = uiState.isUploadingAvatar,
+                    onAvatarClick = requestImagePicker,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
                 )
@@ -230,6 +282,8 @@ fun EditProfileScreen(
 @Composable
 private fun AvatarEditSection(
     avatarUrl: String?,
+    newAvatarGuid: String?,
+    isUploading: Boolean,
     onAvatarClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -240,8 +294,13 @@ private fun AvatarEditSection(
     ) {
         // 头像显示区域
         Box {
+            // 显示新头像或当前头像
+            val displayUrl = newAvatarGuid?.let {
+                "${TangyuanApplication.instance.bizDomain}images/$it.jpg"
+            } ?: avatarUrl
+
             AsyncImage(
-                model = avatarUrl,
+                model = displayUrl,
                 contentDescription = "用户头像",
                 modifier = Modifier
                     .size(120.dp)
@@ -251,6 +310,7 @@ private fun AvatarEditSection(
                         color = MaterialTheme.colorScheme.primary,
                         shape = CircleShape
                     )
+                    .clickable { onAvatarClick() }
                     .let { mod ->
                         if (sharedTransitionScope != null && animatedContentScope != null) {
                             with(sharedTransitionScope) {
@@ -269,30 +329,48 @@ private fun AvatarEditSection(
                 fallback = painterResource(R.drawable.ic_launcher_foreground)
             )
 
-            // 编辑按钮
-            IconButton(
-                onClick = onAvatarClick,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
+            // 上传中遮罩层
+            if (isUploading) {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(40.dp),
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    .size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CameraAlt,
-                    contentDescription = "更换头像",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
+                }
+            }
+
+            // 编辑按钮
+            if (!isUploading) {
+                IconButton(
+                    onClick = onAvatarClick,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
+                        .size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "更换头像",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "点击更换头像",
+            text = if (isUploading) "上传中..." else "点击更换头像",
             style = MaterialTheme.typography.bodySmall,
             fontFamily = TangyuanGeneralFontFamily,
             color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -66,7 +66,7 @@ class CategoryRepository @Inject constructor(
     fun get7dNewPostCountByCategoryId(categoryId: Int): Flow<Int> = flow {
         val response = apiInterface.get7dNewPostCountByCategoryId(categoryId).awaitResponse()
         if (response.isSuccessful) {
-            response.body()?.let { emit(it) } 
+            response.body()?.let { emit(it) }
                 ?: emit(0)
         } else {
             throw Exception("Failed to get 7d new post count: ${response.message()}")

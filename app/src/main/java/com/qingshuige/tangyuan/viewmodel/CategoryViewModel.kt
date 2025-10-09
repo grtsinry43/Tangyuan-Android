@@ -3,7 +3,9 @@ package com.qingshuige.tangyuan.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.qingshuige.tangyuan.model.Category
+import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.repository.CategoryRepository
+import com.qingshuige.tangyuan.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,12 +26,14 @@ data class CategoryUiState(
     val categories: List<Category> = emptyList(),
     val currentCategory: Category? = null,
     val categoryStats: CategoryStats? = null,
+    val posts: List<PostCard> = emptyList(),
     val error: String? = null
 )
 
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val postRepository: PostRepository
 ) : ViewModel() {
     
     private val _categoryUiState = MutableStateFlow(CategoryUiState())
@@ -154,7 +158,58 @@ class CategoryViewModel @Inject constructor(
     fun clearCurrentCategory() {
         _categoryUiState.value = _categoryUiState.value.copy(
             currentCategory = null,
-            categoryStats = null
+            categoryStats = null,
+            posts = emptyList()
         )
+    }
+
+    fun loadCategoryDetail(categoryId: Int) {
+        viewModelScope.launch {
+            _categoryUiState.value = _categoryUiState.value.copy(isLoading = true, error = null)
+            try {
+                // Load category info
+                categoryRepository.getCategoryById(categoryId)
+                    .catch { throw it }
+                    .collect { category ->
+                        _categoryUiState.value = _categoryUiState.value.copy(
+                            currentCategory = category
+                        )
+                    }
+
+                // Load category stats
+                var dailyNewCount = 0
+                var sevenDayNewCount = 0
+
+                categoryRepository.get24hNewPostCountByCategoryId(categoryId)
+                    .catch { throw it }
+                    .collect { count -> dailyNewCount = count }
+
+                categoryRepository.get7dNewPostCountByCategoryId(categoryId)
+                    .catch { throw it }
+                    .collect { count -> sevenDayNewCount = count }
+
+                val stats = CategoryStats(
+                    dailyNewCount = dailyNewCount,
+                    sevenDayNewCount = sevenDayNewCount
+                )
+
+                _categoryUiState.value = _categoryUiState.value.copy(categoryStats = stats)
+
+                // Load posts using PostRepository to get complete PostCard objects
+                postRepository.getCategoryPostCards(categoryId)
+                    .catch { throw it }
+                    .collect { posts ->
+                        _categoryUiState.value = _categoryUiState.value.copy(
+                            isLoading = false,
+                            posts = posts
+                        )
+                    }
+            } catch (e: Exception) {
+                _categoryUiState.value = _categoryUiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
+            }
+        }
     }
 }

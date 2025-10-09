@@ -57,6 +57,7 @@ fun ImageDetailScreen(
     initialImageIndex: Int = 0,
     onBackClick: () -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
+    onCategoryClick: (Int) -> Unit = {},
     onSwitchToTextMode: () -> Unit = {},
     viewModel: PostDetailViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -131,6 +132,7 @@ fun ImageDetailScreen(
                 BottomContentOverlay(
                     postCard = postCard,
                     onAuthorClick = onAuthorClick,
+                    onCategoryClick = onCategoryClick,
                     onSwitchToTextMode = onSwitchToTextMode,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
@@ -369,6 +371,7 @@ private fun ZoomableImage(
 private fun BottomContentOverlay(
     postCard: PostCard,
     onAuthorClick: (Int) -> Unit,
+    onCategoryClick: (Int) -> Unit,
     onSwitchToTextMode: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedContentScope: AnimatedContentScope?
@@ -430,18 +433,41 @@ private fun BottomContentOverlay(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.2f)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = postCard.categoryName,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontFamily = LiteraryFontFamily,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Section 徽标
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = postCard.getSectionName(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = LiteraryFontFamily,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // 分类徽标
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = postCard.categoryName,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = LiteraryFontFamily,
+                            color = Color.White,
+                            modifier = Modifier
+                                .clickable { onCategoryClick(postCard.categoryId) }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
                 Text(
                     text = postCard.getTimeDisplayText(),

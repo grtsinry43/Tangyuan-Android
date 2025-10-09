@@ -11,6 +11,8 @@ data class PostCard(
     val postId: Int,
     val postDateTime: Date?,
     val isVisible: Boolean,
+    // 所属版块
+    val sectionId: Int = 1,
     
     // 作者信息
     val authorId: Int,
@@ -89,6 +91,16 @@ data class PostCard(
             }
         }
     }
+
+    /**
+     * 获取版块名称
+     */
+    fun getSectionName(): String = when (sectionId) {
+        0 -> "公告"
+        1 -> "聊一聊"
+        2 -> "侃一侃"
+        else -> "其他"
+    }
 }
 
 /**
@@ -121,6 +133,7 @@ fun PostMetadata.toPostCard(
         postId = this.postId,
         postDateTime = this.postDateTime,
         isVisible = this.isVisible,
+        sectionId = this.sectionId,
         
         authorId = author.userId,
         authorName = author.nickName.ifBlank { "匿名用户" },

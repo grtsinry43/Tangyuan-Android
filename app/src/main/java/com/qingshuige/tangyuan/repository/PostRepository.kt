@@ -191,10 +191,80 @@ class PostRepository @Inject constructor(
     fun getPostsByCategory(categoryId: Int): Flow<List<PostMetadata>> = flow {
         val response = apiInterface.getAllMetadatasByCategoryId(categoryId).awaitResponse()
         if (response.isSuccessful) {
-            response.body()?.let { emit(it) } 
+            response.body()?.let { emit(it) }
                 ?: emit(emptyList())
         } else {
             throw Exception("Failed to get posts by category: ${response.message()}")
+        }
+    }
+
+    /**
+     * 获取分类的完整文章卡片列表
+     */
+    fun getCategoryPostCards(categoryId: Int): Flow<List<PostCard>> = flow {
+        try {
+            // 1. 获取分类下的所有文章元数据
+            val metadataResponse = apiInterface.getAllMetadatasByCategoryId(categoryId).awaitResponse()
+            if (!metadataResponse.isSuccessful) {
+                throw Exception("Failed to get category posts: ${metadataResponse.message()}")
+            }
+
+            val postMetadataList = metadataResponse.body() ?: emptyList()
+            if (postMetadataList.isEmpty()) {
+                emit(emptyList())
+                return@flow
+            }
+
+            // 2. 并行获取所有相关数据
+            val postCards = coroutineScope {
+                postMetadataList.map { metadata ->
+                    async {
+                        try {
+                            // 并行获取用户、分类、文章内容
+                            val userDeferred = async {
+                                val userResponse = apiInterface.getUser(metadata.userId).awaitResponse()
+                                userResponse.body() ?: User(userId = metadata.userId, nickName = "未知用户")
+                            }
+
+                            val categoryDeferred = async {
+                                val categoryResponse = apiInterface.getCategory(metadata.categoryId).awaitResponse()
+                                categoryResponse.body() ?: Category(categoryId = metadata.categoryId, baseName = "未分类")
+                            }
+
+                            val bodyDeferred = async {
+                                val bodyResponse = apiInterface.getPostBody(metadata.postId).awaitResponse()
+                                bodyResponse.body() ?: PostBody(postId = metadata.postId, textContent = "内容加载失败")
+                            }
+
+                            // 等待所有数据获取完成
+                            val user = userDeferred.await()
+                            val category = categoryDeferred.await()
+                            val body = bodyDeferred.await()
+
+                            // 转换为PostCard
+                            metadata.toPostCard(user, category, body)
+                        } catch (e: Exception) {
+                            // 单个文章失败不影响整体
+                            PostCard(
+                                postId = metadata.postId,
+                                postDateTime = metadata.postDateTime,
+                                isVisible = metadata.isVisible,
+                                authorId = metadata.userId,
+                                authorName = "加载失败",
+                                authorAvatar = "",
+                                categoryId = metadata.categoryId,
+                                categoryName = "未知分类",
+                                textContent = "内容加载失败: ${e.message}"
+                            )
+                        }
+                    }
+                }.awaitAll()
+            }
+
+            emit(postCards.filter { it.isVisible }) // 只返回可见的文章
+
+        } catch (e: Exception) {
+            throw Exception("Failed to get category post cards: ${e.message}")
         }
     }
     

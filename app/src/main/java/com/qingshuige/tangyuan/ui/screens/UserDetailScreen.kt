@@ -46,6 +46,7 @@ fun UserDetailScreen(
     onPostClick: (Int) -> Unit = {},
     onImageClick: (postId: Int, imageIndex: Int) -> Unit = { _, _ -> },
     onFollowClick: () -> Unit = {},
+    onCategoryClick: (Int) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
     sharedElementPrefix: String? = null, // 从导航传递的前缀
@@ -156,6 +157,7 @@ fun UserDetailScreen(
                                 onImageClick = { postId, imageIndex ->
                                     onImageClick(postId, imageIndex)
                                 },
+                                onCategoryClick = onCategoryClick,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedContentScope = animatedContentScope,
                                 sharedElementPrefix = "userdetail_post_${postCard.postId}"

@@ -134,6 +134,8 @@ fun PostCardItem(
     onBookmarkClick: (Int) -> Unit = {},
     onMoreClick: (Int) -> Unit = {},
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
+    onCategoryClick: (Int) -> Unit = {},
+    showSectionBadge: Boolean = true,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
@@ -199,10 +201,24 @@ fun PostCardItem(
             }
             
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // 分类标签
-            PostCardCategory(postCard = postCard)
-            
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Section 徽标（可控显示）
+                if (showSectionBadge) {
+                    SectionBadge(sectionName = postCard.getSectionName())
+                }
+
+                // 分类徽标
+                PostCardCategory(
+                    postCard = postCard,
+                    onCategoryClick = onCategoryClick
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
             
             // 交互按钮栏
@@ -447,17 +463,39 @@ private fun PostCardImages(
  * 分类标签
  */
 @Composable
-private fun PostCardCategory(postCard: PostCard) {
+private fun PostCardCategory(
+    postCard: PostCard,
+    onCategoryClick: (Int) -> Unit = {}
+) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
-        modifier = Modifier.wrapContentWidth()
+        modifier = Modifier
+            .wrapContentWidth()
+            .clickable { onCategoryClick(postCard.categoryId) }
     ) {
         Text(
             text = postCard.categoryName,
             style = MaterialTheme.typography.labelSmall,
             fontFamily = LiteraryFontFamily,
             color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun SectionBadge(sectionName: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    ) {
+        Text(
+            text = sectionName,
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = LiteraryFontFamily,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             fontWeight = FontWeight.Medium
         )

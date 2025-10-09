@@ -23,6 +23,7 @@ import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.AboutScreen
+import com.qingshuige.tangyuan.ui.screens.CategoryScreen
 import com.qingshuige.tangyuan.ui.screens.CreatePostScreen
 import com.qingshuige.tangyuan.ui.screens.DesignSystemScreen
 import com.qingshuige.tangyuan.ui.screens.EditProfileScreen
@@ -86,482 +87,572 @@ fun App(
                 navController = navController,
                 startDestination = "main"
             ) {
-            composable("main") {
-                MainFlow(
-                    onLoginClick = { navController.navigate(Screen.Login.route) },
-                    onPostClick = { postId ->
-                        navController.navigate(Screen.PostDetail.createRoute(postId))
-                    },
-                    onImageClick = { postId, imageIndex ->
-                        navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex))
-                    },
-                    onAuthorClick = { authorId ->
-                        navController.navigate(Screen.UserDetail.createRoute(authorId))
-                    },
-                    onAboutClick = { navController.navigate(Screen.About.route) },
-                    onCreatePostClick = { sectionId ->
-                        navController.navigate(Screen.CreatePost.createRoute(sectionId))
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@composable,
-                    onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) },
-                    onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
-                    onPostManagementClick = { navController.navigate(Screen.PostManagement.route) }
-                )
-            }
-
-            composable(
-                route = Screen.Login.route,
-                enterTransition = {
-                    slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = tween(
-                            durationMillis = 350,
-                            easing = QuickSpringEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = QuickEasing
-                        )
+                composable("main") {
+                    MainFlow(
+                        onLoginClick = { navController.navigate(Screen.Login.route) },
+                        onPostClick = { postId ->
+                            navController.navigate(Screen.PostDetail.createRoute(postId))
+                        },
+                        onImageClick = { postId, imageIndex ->
+                            navController.navigate(
+                                Screen.ImageDetail.createRoute(
+                                    postId,
+                                    imageIndex
+                                )
+                            )
+                        },
+                        onAuthorClick = { authorId ->
+                            navController.navigate(Screen.UserDetail.createRoute(authorId))
+                        },
+                        onCategoryClick = { categoryId ->
+                            navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
+                        },
+                        onAboutClick = { navController.navigate(Screen.About.route) },
+                        onCreatePostClick = { sectionId ->
+                            navController.navigate(Screen.CreatePost.createRoute(sectionId))
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@composable,
+                        onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) },
+                        onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
+                        onPostManagementClick = { navController.navigate(Screen.PostManagement.route) }
                     )
                 }
-            ) {
-                LoginScreen(navController = navController)
-            }
 
-            // 帖子详情页 - 使用淡入淡出避免与共享元素冲突
-            composable(
-                route = Screen.PostDetail.route,
-                arguments = listOf(
-                    navArgument("postId") { type = NavType.IntType }
-                ),
-                enterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
+                composable(
+                    route = Screen.Login.route,
+                    enterTransition = {
+                        slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(
+                                durationMillis = 350,
+                                easing = QuickSpringEasing
+                            )
                         )
-                    )
-                },
-                exitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getInt("postId") ?: 0
-
-                PostDetailScreen(
-                    postId = postId,
-                    onBackClick = { navController.popBackStack() },
-                    onAuthorClick = { authorId ->
-                        navController.navigate(Screen.UserDetail.createRoute(authorId))
                     },
-                    onImageClick = { postId, imageIndex ->
-                        navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex)) {
-                            popUpTo(Screen.PostDetail.createRoute(postId)) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
+                    exitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
                     },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@composable
-                )
-            }
-
-            // 图片详情页 - 使用淡入淡出避免与共享元素冲突
-            composable(
-                route = Screen.ImageDetail.route,
-                arguments = listOf(
-                    navArgument("postId") { type = NavType.IntType },
-                    navArgument("imageIndex") { type = NavType.IntType }
-                ),
-                enterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
+                    popExitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
                         )
-                    )
-                },
-                exitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getInt("postId") ?: 0
-                val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
-
-                ImageDetailScreen(
-                    postId = postId,
-                    initialImageIndex = imageIndex,
-                    onBackClick = { navController.popBackStack() },
-                    onAuthorClick = { authorId ->
-                        navController.navigate(Screen.UserDetail.createRoute(authorId))
-                    },
-                    onSwitchToTextMode = {
-                        navController.navigate(Screen.PostDetail.createRoute(postId)) {
-                            popUpTo(Screen.ImageDetail.createRoute(postId, imageIndex)) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@composable
-                )
-            }
-
-            // 用户详情页 - 使用淡入淡出避免与共享元素冲突
-            composable(
-                route = Screen.UserDetail.route,
-                arguments = listOf(
-                    navArgument("userId") { type = NavType.IntType }
-                ),
-                enterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) { backStackEntry ->
-                val userId = backStackEntry.arguments?.getInt("userId") ?: 0
-
-                UserDetailScreen(
-                    userId = userId,
-                    onBackClick = { navController.popBackStack() },
-                    onPostClick = { postId ->
-                        navController.navigate(Screen.PostDetail.createRoute(postId))
-                    },
-                    onImageClick = { postId, imageIndex ->
-                        navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex)) {
-                            popUpTo(Screen.PostDetail.createRoute(postId)) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                    },
-                    onFollowClick = {
-                        // TODO: 实现关注功能
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@composable
-                )
-            }
-
-            composable(
-                route = Screen.About.route,
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickSpringEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) {
-                AboutScreen(
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
-
-            composable(
-                route = Screen.DesignSystem.route,
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickSpringEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) {
-                DesignSystemScreen(
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
-
-
-            composable(
-                route = Screen.CreatePost.route,
-                arguments = listOf(navArgument("sectionId") { type = NavType.IntType }),
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickSpringEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) { backStackEntry ->
-                val sectionId = backStackEntry.arguments?.getInt("sectionId") ?: 1
-                CreatePostScreen(
-                    sectionId = sectionId,
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onPostSuccess = {
-                        // 发帖成功后返回首页
-                        navController.popBackStack("main", false)
                     }
-                )
-            }
-
-            // 编辑个人资料页面 - 使用淡入淡出避免与共享元素冲突
-            composable(
-                route = Screen.EditProfile.route,
-                enterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
-                        )
-                    )
+                ) {
+                    LoginScreen(navController = navController)
                 }
-            ) {
-                EditProfileScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onSaveSuccess = { navController.popBackStack() },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedContentScope = this@composable
-                )
-            }
 
-            // 帖子管理页面
-            composable(
-                route = Screen.PostManagement.route,
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickSpringEasing
+                // 帖子详情页 - 使用淡入淡出避免与共享元素冲突
+                composable(
+                    route = Screen.PostDetail.route,
+                    arguments = listOf(
+                        navArgument("postId") { type = NavType.IntType }
+                    ),
+                    enterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
                         )
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
+                    },
+                    exitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
                         )
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 3 },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            easing = QuickEasing
+                    },
+                    popEnterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
                         )
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = QuickEasing
+                    },
+                    popExitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
                         )
-                    )
-                }
-            ) {
-                PostManagementScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onPostClick = { postId ->
-                        navController.navigate(Screen.PostDetail.createRoute(postId))
                     }
-                )
-            }
+                ) { backStackEntry ->
+                    val postId = backStackEntry.arguments?.getInt("postId") ?: 0
+
+                    PostDetailScreen(
+                        postId = postId,
+                        onBackClick = { navController.popBackStack() },
+                        onAuthorClick = { authorId ->
+                            navController.navigate(Screen.UserDetail.createRoute(authorId))
+                        },
+                        onCategoryClick = { categoryId ->
+                            navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
+                        },
+                        onImageClick = { postId, imageIndex ->
+                            navController.navigate(
+                                Screen.ImageDetail.createRoute(
+                                    postId,
+                                    imageIndex
+                                )
+                            ) {
+                                popUpTo(Screen.PostDetail.createRoute(postId)) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@composable
+                    )
+                }
+
+                // 图片详情页 - 使用淡入淡出避免与共享元素冲突
+                composable(
+                    route = Screen.ImageDetail.route,
+                    arguments = listOf(
+                        navArgument("postId") { type = NavType.IntType },
+                        navArgument("imageIndex") { type = NavType.IntType }
+                    ),
+                    enterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) { backStackEntry ->
+                    val postId = backStackEntry.arguments?.getInt("postId") ?: 0
+                    val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
+
+                    ImageDetailScreen(
+                        postId = postId,
+                        initialImageIndex = imageIndex,
+                        onBackClick = { navController.popBackStack() },
+                        onAuthorClick = { authorId ->
+                            navController.navigate(Screen.UserDetail.createRoute(authorId))
+                        },
+                        onCategoryClick = { categoryId ->
+                            navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
+                        },
+                        onSwitchToTextMode = {
+                            navController.navigate(Screen.PostDetail.createRoute(postId)) {
+                                popUpTo(Screen.ImageDetail.createRoute(postId, imageIndex)) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@composable
+                    )
+                }
+
+                // 用户详情页 - 使用淡入淡出避免与共享元素冲突
+                composable(
+                    route = Screen.UserDetail.route,
+                    arguments = listOf(
+                        navArgument("userId") { type = NavType.IntType }
+                    ),
+                    enterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+
+                    UserDetailScreen(
+                        userId = userId,
+                        onBackClick = { navController.popBackStack() },
+                        onPostClick = { postId ->
+                            navController.navigate(Screen.PostDetail.createRoute(postId))
+                        },
+                        onImageClick = { postId, imageIndex ->
+                            navController.navigate(
+                                Screen.ImageDetail.createRoute(
+                                    postId,
+                                    imageIndex
+                                )
+                            ) {
+                                popUpTo(Screen.PostDetail.createRoute(postId)) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        },
+                        onFollowClick = {
+                            // TODO: 实现关注功能
+                        },
+                        onCategoryClick = { categoryId ->
+                            navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@composable
+                    )
+                }
+
+                // 分类详情页 - 使用淡入淡出过渡
+                composable(
+                    route = Screen.CategoryDetail.route,
+                    arguments = listOf(
+                        navArgument("categoryId") { type = NavType.IntType }
+                    ),
+                    enterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) { backStackEntry ->
+                    val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
+
+                    CategoryScreen(
+                        categoryId = categoryId,
+                        onBackClick = { navController.popBackStack() },
+                        onPostClick = { postId ->
+                            navController.navigate(Screen.PostDetail.createRoute(postId))
+                        },
+                        onAuthorClick = { authorId ->
+                            navController.navigate(Screen.UserDetail.createRoute(authorId))
+                        },
+                        onImageClick = { postId, imageIndex ->
+                            navController.navigate(
+                                Screen.ImageDetail.createRoute(
+                                    postId,
+                                    imageIndex
+                                )
+                            )
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@composable
+                    )
+                }
+
+                composable(
+                    route = Screen.About.route,
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickSpringEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
+                    AboutScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = Screen.DesignSystem.route,
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickSpringEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
+                    DesignSystemScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+
+                composable(
+                    route = Screen.CreatePost.route,
+                    arguments = listOf(navArgument("sectionId") { type = NavType.IntType }),
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickSpringEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) { backStackEntry ->
+                    val sectionId = backStackEntry.arguments?.getInt("sectionId") ?: 1
+                    CreatePostScreen(
+                        sectionId = sectionId,
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onPostSuccess = {
+                            // 发帖成功后返回首页
+                            navController.popBackStack("main", false)
+                        }
+                    )
+                }
+
+                // 编辑个人资料页面 - 使用淡入淡出避免与共享元素冲突
+                composable(
+                    route = Screen.EditProfile.route,
+                    enterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
+                    EditProfileScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onSaveSuccess = { navController.popBackStack() },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@composable
+                    )
+                }
+
+                // 帖子管理页面
+                composable(
+                    route = Screen.PostManagement.route,
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickSpringEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
+                    PostManagementScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onPostClick = { postId ->
+                            navController.navigate(Screen.PostDetail.createRoute(postId))
+                        }
+                    )
+                }
             }
         }
 
@@ -586,6 +677,7 @@ fun MainFlow(
     onPostClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
     onAuthorClick: (Int) -> Unit = {},
+    onCategoryClick: (Int) -> Unit = {},
     onAboutClick: () -> Unit,
     onDesignSystemClick: () -> Unit,
     onEditProfileClick: () -> Unit,
@@ -732,6 +824,7 @@ fun MainFlow(
                     onPostClick = onPostClick,
                     onAuthorClick = onAuthorClick,
                     onImageClick = onImageClick,
+                    onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
                 )
@@ -741,6 +834,7 @@ fun MainFlow(
                     onPostClick = onPostClick,
                     onAuthorClick = onAuthorClick,
                     onImageClick = onImageClick,
+                    onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
                 )

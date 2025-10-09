@@ -22,6 +22,9 @@ sealed class Screen(val route: String, val title: String) {
     object UserDetail : Screen("user_detail/{userId}", "用户详情") {
         fun createRoute(userId: Int) = "user_detail/$userId"
     }
+    object CategoryDetail : Screen("category_detail/{categoryId}", "分类详情") {
+        fun createRoute(categoryId: Int) = "category_detail/$categoryId"
+    }
     object EditProfile : Screen("edit_profile", "编辑个人资料")
     object PostManagement : Screen("post_management", "帖子管理")
 }

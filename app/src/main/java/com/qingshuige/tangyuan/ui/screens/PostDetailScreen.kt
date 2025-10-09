@@ -64,6 +64,7 @@ fun PostDetailScreen(
     postId: Int,
     onBackClick: () -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
+    onCategoryClick: (Int) -> Unit = {},
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
     viewModel: PostDetailViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -147,6 +148,7 @@ fun PostDetailScreen(
                 isError = state.error != null && state.postCard == null,
                 errorMessage = state.error,
                 onAuthorClick = onAuthorClick,
+                onCategoryClick = onCategoryClick,
                 onImageClick = onImageClick,
                 onReplyToComment = viewModel::setReplyToComment,
                 onDeleteComment = { commentId ->
@@ -356,7 +358,7 @@ private fun PostDetailTopBar(
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun PostDetailContent(
+private fun  PostDetailContent(
     postCard: PostCard?,
     comments: List<CommentCard>,
     listState: LazyListState,
@@ -364,6 +366,7 @@ private fun PostDetailContent(
     isError: Boolean,
     errorMessage: String?,
     onAuthorClick: (Int) -> Unit,
+    onCategoryClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit,
     onReplyToComment: (CommentCard) -> Unit,
     onDeleteComment: (Int) -> Unit,
@@ -392,6 +395,7 @@ private fun PostDetailContent(
                     postCard = card,
                     onAuthorClick = onAuthorClick,
                     onImageClick = onImageClick,
+                    onCategoryClick = onCategoryClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
                 )
@@ -444,6 +448,7 @@ private fun PostDetailCard(
     postCard: PostCard,
     onAuthorClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit,
+    onCategoryClick: (Int) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
@@ -516,20 +521,43 @@ private fun PostDetailCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = postCard.categoryName,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontFamily = LiteraryFontFamily,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Section 徽标
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                    ) {
+                        Text(
+                            text = postCard.getSectionName(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = LiteraryFontFamily,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // 分类徽标
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                    ) {
+                        Text(
+                            text = postCard.categoryName,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = LiteraryFontFamily,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier
+                                .clickable { onCategoryClick(postCard.categoryId) }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
-                
+
                 Text(
                     text = postCard.getTimeDisplayText(),
                     style = MaterialTheme.typography.bodySmall,

@@ -46,6 +46,7 @@ fun TopicScreen(
     onPostClick: (Int) -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
+    onCategoryClick: (Int) -> Unit = {},
     viewModel: TopicViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
@@ -118,9 +119,11 @@ fun TopicScreen(
                             // TODO: 显示更多操作菜单
                         },
                         onImageClick = onImageClick,
+                        onCategoryClick = onCategoryClick,
                         onErrorDismiss = viewModel::clearError,
                         sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope
+                        animatedContentScope = animatedContentScope,
+                        showSectionBadge = false
                     )
                 }
             }

@@ -8,5 +8,5 @@ data class User(
     val email: String = "",
     val bio: String = "",
     val avatarGuid: String = "",
-    val password: String = ""
+    val password: String? = ""
 )

@@ -1,6 +1,8 @@
 package com.qingshuige.tangyuan.ui.screens
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,6 +75,36 @@ fun CreatePostScreen(
             }
 
             viewModel.addImageAndUpload(context, it)
+        }
+    }
+
+    // 权限请求 launcher (仅用于 Android 12 及以下)
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            imagePickerLauncher.launch(
+                androidx.activity.result.PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        } else {
+            UIUtils.showError("需要存储权限才能选择图片")
+        }
+    }
+
+    // 请求图片选择的函数
+    val requestImagePicker: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ 使用 Photo Picker，不需要权限
+            imagePickerLauncher.launch(
+                androidx.activity.result.PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        } else {
+            // Android 12 及以下需要请求权限
+            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
     }
 
@@ -230,13 +262,7 @@ fun CreatePostScreen(
                 selectedImages = uiState.selectedImageUris,
                 uploadProgress = uiState.uploadProgress,
                 remainingSlots = uiState.remainingImageSlots,
-                onAddImage = {
-                    imagePickerLauncher.launch(
-                        androidx.activity.result.PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                        )
-                    )
-                },
+                onAddImage = requestImagePicker,
                 onRemoveImage = { viewModel.removeImageAt(it) }
             )
 
