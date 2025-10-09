@@ -85,6 +85,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     implementation(libs.pangu.jvm)
+
+    // QR Code generation
+    implementation(libs.core)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

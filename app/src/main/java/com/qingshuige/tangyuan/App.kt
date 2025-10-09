@@ -48,8 +48,23 @@ private val QuickEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun App() {
+fun App(
+    onDeepLinkCallbackSet: ((Int) -> Unit) -> Unit = {}
+) {
     val navController = rememberNavController()
+
+    // 注册深层链接回调
+    LaunchedEffect(Unit) {
+        android.util.Log.d("App", "Setting up deep link callback")
+        onDeepLinkCallbackSet { postId ->
+            android.util.Log.d("App", "Deep link callback triggered with postId: $postId")
+            // 导航到帖子详情页
+            navController.navigate(Screen.PostDetail.createRoute(postId)) {
+                // 如果已经在主页面，不要清除回退栈
+                launchSingleTop = true
+            }
+        }
+    }
 
     // 全局消息和对话框管理
     val messageViewModel: MessageViewModel = hiltViewModel()

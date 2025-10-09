@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -39,9 +41,19 @@ import com.qingshuige.tangyuan.ui.components.CommentInputBar
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
+import com.qingshuige.tangyuan.utils.ShareCardGenerator
 import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.PostDetailViewModel
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * 帖子详情页
@@ -59,17 +71,48 @@ fun PostDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
-    
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var showSharePreview by remember { mutableStateOf(false) }
+    var shareCardBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
     // 加载帖子详情
     LaunchedEffect(postId) {
         viewModel.loadPostDetail(postId)
     }
-    
+
     Scaffold(
         topBar = {
             PostDetailTopBar(
                 onBackClick = onBackClick,
-                isLoading = state.isLoading
+                isLoading = state.isLoading,
+                onShareClick = {
+                    state.postCard?.let { postCard ->
+                        // 在协程中生成分享卡片
+                        scope.launch {
+                            try {
+                                // 生成深层链接（使用自定义scheme）
+                                val deepLink = "tangyuan://post/$postId"
+
+                                // 生成分享卡片
+                                val bitmap = withContext(Dispatchers.IO) {
+                                    ShareCardGenerator.generateShareCard(
+                                        context = context,
+                                        postCard = postCard,
+                                        deepLink = deepLink
+                                    )
+                                }
+
+                                shareCardBitmap = bitmap
+                                showSharePreview = true
+                            } catch (e: Exception) {
+                                UIUtils.showError("生成分享卡片失败: ${e.message}")
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
             )
         },
         bottomBar = {
@@ -126,12 +169,130 @@ fun PostDetailScreen(
             )
         }
     }
-    
+
+    // 分享预览对话框
+    if (showSharePreview && shareCardBitmap != null) {
+        SharePreviewDialog(
+            bitmap = shareCardBitmap!!,
+            onDismiss = {
+                showSharePreview = false
+                shareCardBitmap = null
+            },
+            onShare = {
+                scope.launch {
+                    try {
+                        sharePostWithBitmap(context, shareCardBitmap!!, postId)
+                        showSharePreview = false
+                    } catch (e: Exception) {
+                        UIUtils.showError("分享失败: ${e.message}")
+                        e.printStackTrace()
+                    }
+                }
+            }
+        )
+    }
+
     // 错误提示
     state.commentError?.let { error ->
         LaunchedEffect(error) {
             // 显示错误提示，可以用SnackBar
             viewModel.clearCommentError()
+        }
+    }
+}
+
+/**
+ * 分享预览对话框
+ */
+@Composable
+private fun SharePreviewDialog(
+    bitmap: Bitmap,
+    onDismiss: () -> Unit,
+    onShare: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 标题
+                Text(
+                    text = "分享预览",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontFamily = TangyuanGeneralFontFamily,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 预览图片（缩小显示）
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "分享卡片预览",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentScale = ContentScale.FillWidth
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 按钮组
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 取消按钮
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "取消",
+                            fontFamily = TangyuanGeneralFontFamily
+                        )
+                    }
+
+                    // 分享按钮
+                    Button(
+                        onClick = onShare,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "分享",
+                            fontFamily = TangyuanGeneralFontFamily
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -143,7 +304,8 @@ fun PostDetailScreen(
 @Composable
 private fun PostDetailTopBar(
     onBackClick: () -> Unit,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onShareClick: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -164,6 +326,15 @@ private fun PostDetailTopBar(
             }
         },
         actions = {
+            // 分享按钮
+            IconButton(onClick = onShareClick) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "分享",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier
@@ -712,5 +883,63 @@ private fun ErrorContent(
                 )
             }
         }
+    }
+}
+
+/**
+ * 使用已生成的Bitmap分享帖子
+ */
+private suspend fun sharePostWithBitmap(context: Context, bitmap: Bitmap, postId: Int) = withContext(Dispatchers.IO) {
+    try {
+        // 生成深层链接（使用自定义scheme）
+        val deepLink = "tangyuan://post/$postId"
+
+        // 保存到缓存目录
+        val cacheDir = File(context.cacheDir, "share")
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs()
+        }
+
+        val shareImageFile = File(cacheDir, "share_post_${postId}_${System.currentTimeMillis()}.png")
+        FileOutputStream(shareImageFile).use { outputStream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        }
+
+        // 获取文件URI（使用FileProvider）
+        val imageUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            shareImageFile
+        )
+
+        // 创建分享Intent - 添加预览支持
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, imageUri)
+            putExtra(Intent.EXTRA_TITLE, "糖原社区分享")
+            putExtra(Intent.EXTRA_TEXT, "来自糖原社区的精彩内容：$deepLink")
+
+            // 添加ClipData以支持预览
+            clipData = android.content.ClipData.newRawUri("", imageUri)
+
+            // 授予临时读取权限
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }
+
+        // 启动系统分享面板
+        withContext(Dispatchers.Main) {
+            val chooserIntent = Intent.createChooser(shareIntent, "分享到").apply {
+                // 为chooser也添加权限
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(chooserIntent)
+            UIUtils.showSuccess("分享卡片已生成")
+        }
+    } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+            UIUtils.showError("分享失败: ${e.message}")
+        }
+        e.printStackTrace()
     }
 }
