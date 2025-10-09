@@ -31,6 +31,7 @@ import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
 import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
 import com.qingshuige.tangyuan.ui.screens.NotificationScreen
 import com.qingshuige.tangyuan.ui.screens.PostManagementScreen
+import com.qingshuige.tangyuan.ui.screens.SearchScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
 import com.qingshuige.tangyuan.ui.screens.LoginScreen
 import com.qingshuige.tangyuan.ui.screens.TopicScreen
@@ -115,7 +116,8 @@ fun App(
                         animatedContentScope = this@composable,
                         onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) },
                         onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
-                        onPostManagementClick = { navController.navigate(Screen.PostManagement.route) }
+                        onPostManagementClick = { navController.navigate(Screen.PostManagement.route) },
+                        onSearchClick = { navController.navigate(Screen.Search.route) }
                     )
                 }
 
@@ -653,6 +655,57 @@ fun App(
                         }
                     )
                 }
+
+                // 搜索页（提升到根导航图）
+                composable(
+                    route = Screen.Search.route,
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickSpringEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
+                    SearchScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onPostClick = { postId ->
+                            navController.navigate(Screen.PostDetail.createRoute(postId))
+                        },
+                        onUserClick = { userId ->
+                            navController.navigate(Screen.UserDetail.createRoute(userId))
+                        }
+                    )
+                }
             }
         }
 
@@ -683,6 +736,7 @@ fun MainFlow(
     onEditProfileClick: () -> Unit,
     onPostManagementClick: () -> Unit,
     onCreatePostClick: (sectionId: Int?) -> Unit,
+    onSearchClick: () -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
     userViewModel: UserViewModel = hiltViewModel(),
@@ -743,7 +797,8 @@ fun MainFlow(
                 pageLevel = PageLevel.PRIMARY,
                 onAvatarClick = onAvatarClick,
                 onAnnouncementClick = { postViewModel.getNoticePost() },
-                onPostClick = onCreatePostClick
+                onPostClick = onCreatePostClick,
+                onSearchClick = onSearchClick
             )
         },
         bottomBar = {

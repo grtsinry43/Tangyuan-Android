@@ -79,6 +79,11 @@ class CommentRepository @Inject constructor(
     
     fun searchComments(keyword: String): Flow<List<Comment>> = flow {
         val response = apiInterface.searchCommentByKeyword(keyword).awaitResponse()
+        // 404 视为未找到结果
+        if (response.code() == 404) {
+            emit(emptyList())
+            return@flow
+        }
         if (response.isSuccessful) {
             response.body()?.let { emit(it) } 
                 ?: emit(emptyList())

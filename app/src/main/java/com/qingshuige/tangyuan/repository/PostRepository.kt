@@ -299,6 +299,11 @@ class PostRepository @Inject constructor(
     
     fun searchPosts(keyword: String): Flow<List<PostMetadata>> = flow {
         val response = apiInterface.searchPostByKeyword(keyword).awaitResponse()
+        // 404 视为未找到结果
+        if (response.code() == 404) {
+            emit(emptyList())
+            return@flow
+        }
         if (response.isSuccessful) {
             response.body()?.let { emit(it) } 
                 ?: emit(emptyList())

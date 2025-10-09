@@ -14,8 +14,8 @@ android {
         applicationId = "com.qingshuige.tangyuan"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.ui.graphics)
     implementation(libs.androidx.animation.core)
+    implementation(libs.androidx.foundation)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     

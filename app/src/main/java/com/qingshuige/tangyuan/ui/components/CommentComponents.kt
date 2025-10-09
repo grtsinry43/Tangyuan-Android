@@ -563,16 +563,9 @@ fun CommentInputBar(
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                     ),
                     keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Send
+                        imeAction = ImeAction.Default
                     ),
-                    keyboardActions = KeyboardActions(
-                        onSend = {
-                            if (commentText.isNotBlank() && !isCreating) {
-                                onSendComment(commentText)
-                                commentText = ""
-                            }
-                        }
-                    ),
+                    keyboardActions = KeyboardActions.Default,
                     maxLines = 4
                 )
                 

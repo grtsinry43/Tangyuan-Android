@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -77,7 +78,8 @@ fun TangyuanTopBar(
     onAvatarClick: (() -> Unit)? = null,
     onAnnouncementClick: (() -> Unit)? = null,
     onPostClick: ((sectionId: Int) -> Unit)? = null,
-    onActionClick: (() -> Unit)? = null
+    onActionClick: (() -> Unit)? = null,
+    onSearchClick: (() -> Unit)? = null
 ) {
     TopAppBar(
         title = {
@@ -152,11 +154,21 @@ fun TangyuanTopBar(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // 右侧：公告、发表、操作按钮
+                // 右侧：搜索、公告、发表、操作按钮
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // 搜索按钮（所有一级页面显示）
+                    if (pageLevel == PageLevel.PRIMARY) {
+                        IconButton(onClick = { onSearchClick?.invoke() }) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = "搜索",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                     // 公告按钮（除我的页面一级页面都显示）
                     if (!(pageLevel == PageLevel.PRIMARY && currentScreen == Screen.User)) {
                         IconButton(onClick = { onAnnouncementClick?.invoke() }) {

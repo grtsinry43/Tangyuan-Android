@@ -57,6 +57,11 @@ class UserRepository @Inject constructor(
     
     fun searchUsers(keyword: String): Flow<List<User>> = flow {
         val response = apiInterface.searchUserByKeyword(keyword).awaitResponse()
+        // 404 视为未找到结果
+        if (response.code() == 404) {
+            emit(emptyList())
+            return@flow
+        }
         if (response.isSuccessful) {
             response.body()?.let { emit(it) } 
                 ?: emit(emptyList())
