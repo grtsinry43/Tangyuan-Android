@@ -106,32 +106,30 @@ class UserViewModel @Inject constructor(
     /**
      * 从token中获取用户ID并加载用户信息
      */
-    private fun getCurrentUserFromToken() {
-        viewModelScope.launch {
-            val userId = tokenManager.getUserIdFromToken()
-            println("DEBUG: 从token中获取的用户ID: $userId")
-            if (userId != null) {
-                // 获取用户信息
-                userRepository.getUserById(userId)
-                    .catch { e ->
-                        println("DEBUG: 获取用户信息失败: ${e.message}")
-                        // 获取用户信息失败
-                        _userUiState.value = _userUiState.value.copy(
-                            error = e.message
-                        )
-                    }
-                    .collect { user ->
-                        println("DEBUG: 获取到用户信息: ${user.nickName}, 头像: ${user.avatarGuid}")
-                        // 更新userUiState
-                        _userUiState.value = _userUiState.value.copy(
-                            currentUser = user
-                        )
-                        // 同时更新loginState中的用户信息
-                        _loginState.value = _loginState.value.copy(user = user)
-                    }
-            } else {
-                println("DEBUG: 无法从token中解析用户ID")
-            }
+    private suspend fun getCurrentUserFromToken() {
+        val userId = tokenManager.getUserIdFromToken()
+        println("DEBUG: 从token中获取的用户ID: $userId")
+        if (userId != null) {
+            // 获取用户信息
+            userRepository.getUserById(userId)
+                .catch { e ->
+                    println("DEBUG: 获取用户信息失败: ${e.message}")
+                    // 获取用户信息失败
+                    _userUiState.value = _userUiState.value.copy(
+                        error = e.message
+                    )
+                }
+                .collect { user ->
+                    println("DEBUG: 获取到用户信息: ${user.nickName}, 头像: ${user.avatarGuid}")
+                    // 更新userUiState
+                    _userUiState.value = _userUiState.value.copy(
+                        currentUser = user
+                    )
+                    // 同时更新loginState中的用户信息
+                    _loginState.value = _loginState.value.copy(user = user)
+                }
+        } else {
+            println("DEBUG: 无法从token中解析用户ID")
         }
     }
 
@@ -151,24 +149,28 @@ class UserViewModel @Inject constructor(
                     if (token != null) {
                         tokenManager.token = token
                         println("DEBUG: 手动登录成功，已保存token: ${token.take(20)}...")
-                    }
-                    // 登录成功，保存账号密码用于自动登录
-                    tokenManager.setPhoneNumberAndPassword(
-                        loginDto.phoneNumber, 
-                        loginDto.password
-                    )
-                    
-                    _loginState.value = _loginState.value.copy(
-                        isLoading = false,
-                        isLoggedIn = true,
-                    )
-                    
-                    // 确保token保存后再获取用户信息
-                    if (token != null) {
+
+                        // 登录成功，保存账号密码用于自动登录
+                        tokenManager.setPhoneNumberAndPassword(
+                            loginDto.phoneNumber,
+                            loginDto.password
+                        )
+
+                        // 先获取用户信息
                         println("DEBUG: 手动登录后开始获取用户信息")
                         getCurrentUserFromToken()
+
+                        // 用户信息获取完成后再设置登录状态，触发页面跳转
+                        _loginState.value = _loginState.value.copy(
+                            isLoading = false,
+                            isLoggedIn = true,
+                        )
                     } else {
                         println("DEBUG: 手动登录失败，未获取到token")
+                        _loginState.value = _loginState.value.copy(
+                            isLoading = false,
+                            error = "登录失败"
+                        )
                     }
                 }
         }

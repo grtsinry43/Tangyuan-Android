@@ -219,9 +219,13 @@ class PostViewModel @Inject constructor(
     fun getNoticePost() {
         viewModelScope.launch {
             try {
-                // TODO: Call repository getNoticePost method
-                // val notice = postRepository.getNoticePost()
-                // _noticePost.value = notice
+                postRepository.getNoticePost()
+                    .catch { e ->
+                        _postUiState.value = _postUiState.value.copy(error = e.message)
+                    }
+                    .collect { notice ->
+                        _noticePost.value = notice
+                    }
             } catch (e: Exception) {
                 _postUiState.value = _postUiState.value.copy(error = e.message)
             }
@@ -253,5 +257,9 @@ class PostViewModel @Inject constructor(
     
     fun clearCreateSuccess() {
         _postUiState.value = _postUiState.value.copy(createSuccess = false)
+    }
+
+    fun clearNoticePost() {
+        _noticePost.value = null
     }
 }

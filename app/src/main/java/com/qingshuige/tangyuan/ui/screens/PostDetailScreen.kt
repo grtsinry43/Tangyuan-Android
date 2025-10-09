@@ -39,6 +39,7 @@ import com.qingshuige.tangyuan.ui.components.CommentInputBar
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
+import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.PostDetailViewModel
 
@@ -105,7 +106,17 @@ fun PostDetailScreen(
                 onAuthorClick = onAuthorClick,
                 onImageClick = onImageClick,
                 onReplyToComment = viewModel::setReplyToComment,
-                onDeleteComment = viewModel::deleteComment,
+                onDeleteComment = { commentId ->
+                    UIUtils.showConfirmDialog(
+                        title = "删除评论",
+                        message = "确定要删除这条评论吗？此操作不可撤销。",
+                        confirmText = "删除",
+                        dismissText = "取消",
+                        onConfirm = {
+                            viewModel.deleteComment(commentId)
+                        }
+                    )
+                },
                 onRetry = {
                     viewModel.clearError()
                     viewModel.loadPostDetail(postId)

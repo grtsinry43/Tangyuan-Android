@@ -2,10 +2,10 @@ package com.qingshuige.tangyuan
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,18 +17,29 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.qingshuige.tangyuan.navigation.Screen
+import com.qingshuige.tangyuan.ui.components.ModernConfirmDialog
+import com.qingshuige.tangyuan.ui.components.GlobalMessageHost
 import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.AboutScreen
 import com.qingshuige.tangyuan.ui.screens.CreatePostScreen
 import com.qingshuige.tangyuan.ui.screens.DesignSystemScreen
+import com.qingshuige.tangyuan.ui.screens.EditProfileScreen
 import com.qingshuige.tangyuan.ui.screens.PostDetailScreen
 import com.qingshuige.tangyuan.ui.screens.ImageDetailScreen
+import com.qingshuige.tangyuan.ui.screens.NotificationScreen
+import com.qingshuige.tangyuan.ui.screens.PostManagementScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
 import com.qingshuige.tangyuan.ui.screens.LoginScreen
+import com.qingshuige.tangyuan.ui.screens.TopicScreen
 import com.qingshuige.tangyuan.ui.screens.UserDetailScreen
 import com.qingshuige.tangyuan.ui.screens.UserScreen
+import com.qingshuige.tangyuan.viewmodel.DialogViewModel
+import com.qingshuige.tangyuan.viewmodel.GlobalDialogManager
+import com.qingshuige.tangyuan.viewmodel.GlobalMessageManager
+import com.qingshuige.tangyuan.viewmodel.MessageViewModel
+import com.qingshuige.tangyuan.viewmodel.PostViewModel
 import com.qingshuige.tangyuan.viewmodel.UserViewModel
 
 // 自定义带回弹效果的easing - 快速流畅
@@ -40,11 +51,26 @@ private val QuickEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 fun App() {
     val navController = rememberNavController()
 
-    SharedTransitionLayout {
-        NavHost(
-            navController = navController,
-            startDestination = "main"
-        ) {
+    // 全局消息和对话框管理
+    val messageViewModel: MessageViewModel = hiltViewModel()
+    val dialogViewModel: DialogViewModel = hiltViewModel()
+
+    // 初始化全局管理器
+    LaunchedEffect(Unit) {
+        GlobalMessageManager.getInstance().setViewModel(messageViewModel)
+        GlobalDialogManager.getInstance().setViewModel(dialogViewModel)
+    }
+
+    // 观察消息和对话框状态
+    val currentMessage by messageViewModel.currentMessage.collectAsState()
+    val currentDialog by dialogViewModel.currentDialog.collectAsState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        SharedTransitionLayout {
+            NavHost(
+                navController = navController,
+                startDestination = "main"
+            ) {
             composable("main") {
                 MainFlow(
                     onLoginClick = { navController.navigate(Screen.Login.route) },
@@ -58,10 +84,14 @@ fun App() {
                         navController.navigate(Screen.UserDetail.createRoute(authorId))
                     },
                     onAboutClick = { navController.navigate(Screen.About.route) },
-                    onCreatePostClick = { navController.navigate(Screen.CreatePost.route) },
+                    onCreatePostClick = { sectionId ->
+                        navController.navigate(Screen.CreatePost.createRoute(sectionId))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedContentScope = this@composable,
-                    onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) }
+                    onDesignSystemClick = { navController.navigate(Screen.DesignSystem.route) },
+                    onEditProfileClick = { navController.navigate(Screen.EditProfile.route) },
+                    onPostManagementClick = { navController.navigate(Screen.PostManagement.route) }
                 )
             }
 
@@ -375,6 +405,104 @@ fun App() {
 
             composable(
                 route = Screen.CreatePost.route,
+                arguments = listOf(navArgument("sectionId") { type = NavType.IntType }),
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickSpringEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { -it / 3 },
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = QuickEasing
+                        )
+                    )
+                }
+            ) { backStackEntry ->
+                val sectionId = backStackEntry.arguments?.getInt("sectionId") ?: 1
+                CreatePostScreen(
+                    sectionId = sectionId,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onPostSuccess = {
+                        // 发帖成功后返回首页
+                        navController.popBackStack("main", false)
+                    }
+                )
+            }
+
+            // 编辑个人资料页面 - 使用淡入淡出避免与共享元素冲突
+            composable(
+                route = Screen.EditProfile.route,
+                enterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = QuickEasing
+                        )
+                    )
+                }
+            ) {
+                EditProfileScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onSaveSuccess = { navController.popBackStack() },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedContentScope = this@composable
+                )
+            }
+
+            // 帖子管理页面
+            composable(
+                route = Screen.PostManagement.route,
                 enterTransition = {
                     slideInHorizontally(
                         initialOffsetX = { it },
@@ -412,17 +540,27 @@ fun App() {
                     )
                 }
             ) {
-                CreatePostScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onPostSuccess = {
-                        // 发帖成功后返回首页
-                        navController.popBackStack("main", false)
+                PostManagementScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onPostClick = { postId ->
+                        navController.navigate(Screen.PostDetail.createRoute(postId))
                     }
                 )
             }
+            }
         }
+
+        // 全局消息提示
+        GlobalMessageHost(
+            message = currentMessage,
+            onDismiss = { messageViewModel.dismiss() }
+        )
+
+        // 全局确认对话框 - 使用现代化设计
+        ModernConfirmDialog(
+            dialogData = currentDialog,
+            onDismissRequest = { dialogViewModel.dismissDialog() }
+        )
     }
 }
 
@@ -435,10 +573,13 @@ fun MainFlow(
     onAuthorClick: (Int) -> Unit = {},
     onAboutClick: () -> Unit,
     onDesignSystemClick: () -> Unit,
-    onCreatePostClick: () -> Unit,
+    onEditProfileClick: () -> Unit,
+    onPostManagementClick: () -> Unit,
+    onCreatePostClick: (sectionId: Int?) -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
-    userViewModel: UserViewModel = hiltViewModel()
+    userViewModel: UserViewModel = hiltViewModel(),
+    postViewModel: PostViewModel = hiltViewModel()
 ) {
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
@@ -451,6 +592,18 @@ fun MainFlow(
     // 观察登录状态和用户信息
     val loginState by userViewModel.loginState.collectAsState()
     val userUiState by userViewModel.userUiState.collectAsState()
+
+    // 观察公告状态
+    val noticePost by postViewModel.noticePost.collectAsState()
+
+    // 当获取到公告时，跳转到详情页
+    LaunchedEffect(noticePost) {
+        noticePost?.let { notice ->
+            onPostClick(notice.postId)
+            // 清空公告状态，避免重复跳转
+            postViewModel.clearNoticePost()
+        }
+    }
 
     // 获取头像URL - 当用户状态变化时重新计算
     val avatarUrl = remember(loginState.user, userUiState.currentUser) {
@@ -482,7 +635,7 @@ fun MainFlow(
                 avatarUrl = avatarUrl,
                 pageLevel = PageLevel.PRIMARY,
                 onAvatarClick = onAvatarClick,
-                onAnnouncementClick = {/* 公告点击事件 */ },
+                onAnnouncementClick = { postViewModel.getNoticePost() },
                 onPostClick = onCreatePostClick
             )
         },
@@ -568,21 +721,40 @@ fun MainFlow(
                     animatedContentScope = animatedContentScope
                 )
             }
-            composable(Screen.Topic.route) { Text(text = "侃一侃") }
-            composable(Screen.Message.route) { Text(text = "消息") }
+            composable(Screen.Topic.route) {
+                TopicScreen(
+                    onPostClick = onPostClick,
+                    onAuthorClick = onAuthorClick,
+                    onImageClick = onImageClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
+                )
+            }
+            composable(Screen.Message.route) {
+                NotificationScreen(
+                    onNotificationClick = { sourceId, sourceType ->
+                        // 根据通知类型跳转到相应页面
+                        when (sourceType) {
+                            "post" -> onPostClick(sourceId)
+                            "comment" -> onPostClick(sourceId) // 评论通知跳转到帖子详情
+                            "user" -> onAuthorClick(sourceId) // 关注通知跳转到用户详情
+                            else -> { /* 忽略未知类型 */
+                            }
+                        }
+                    }
+                )
+            }
             composable(Screen.User.route) {
                 UserScreen(
-                    onEditProfile = {
-                        // TODO: 导航到编辑个人资料页面
-                    },
-                    onPostManagement = {
-                        // TODO: 导航到帖子管理页面
-                    },
+                    onEditProfile = onEditProfileClick,
+                    onPostManagement = onPostManagementClick,
                     onSettings = {
                         // TODO: 导航到设置页面
                     },
                     onAbout = onAboutClick,
                     onDesignSystem = onDesignSystemClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
                 )
             }
         }

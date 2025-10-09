@@ -4,8 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +34,7 @@ import androidx.compose.material.icons.filled.DesignServices
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Email
@@ -68,9 +73,11 @@ import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
 import com.qingshuige.tangyuan.ui.theme.TangyuanTheme
 import com.qingshuige.tangyuan.ui.theme.TangyuanTypography
+import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.UserViewModel
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun UserScreen(
     onEditProfile: () -> Unit = {},
@@ -78,7 +85,9 @@ fun UserScreen(
     onSettings: () -> Unit = {},
     onAbout: () -> Unit = {},
     onDesignSystem: () -> Unit = {},
-    userViewModel: UserViewModel = hiltViewModel()
+    userViewModel: UserViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: androidx.compose.animation.AnimatedContentScope? = null
 ) {
     val loginState by userViewModel.loginState.collectAsState()
     val userUiState by userViewModel.userUiState.collectAsState()
@@ -97,7 +106,9 @@ fun UserScreen(
             // 用户信息卡片
             UserInfoCard(
                 user = currentUser,
-                onEditClick = onEditProfile
+                onEditClick = onEditProfile,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -107,7 +118,19 @@ fun UserScreen(
                 onPostManagement = onPostManagement,
                 onSettings = onSettings,
                 onAbout = onAbout,
-                onDesignSystem = onDesignSystem
+                onDesignSystem = onDesignSystem,
+                onLogout = {
+                    UIUtils.showConfirmDialog(
+                        title = "退出登录",
+                        message = "确定要退出登录吗？",
+                        confirmText = "退出",
+                        dismissText = "取消",
+                        onConfirm = {
+                            userViewModel.logout()
+                            UIUtils.showSuccess("已退出登录")
+                        }
+                    )
+                }
             )
         } else {
             // 未登录状态
@@ -122,10 +145,13 @@ fun UserScreen(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun UserInfoCard(
     user: User,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: androidx.compose.animation.AnimatedContentScope? = null
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -148,7 +174,20 @@ private fun UserInfoCard(
                             width = 3.dp,
                             color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape
-                        ),
+                        )
+                        .let { mod ->
+                            if (sharedTransitionScope != null && animatedContentScope != null) {
+                                with(sharedTransitionScope) {
+                                    mod.sharedElement(
+                                        rememberSharedContentState(key = "edit_profile_avatar"),
+                                        animatedVisibilityScope = animatedContentScope,
+                                        boundsTransform = { _, _ ->
+                                            tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                        }
+                                    )
+                                }
+                            } else mod
+                        },
                     contentScale = ContentScale.Crop,
                     error = painterResource(R.drawable.ic_launcher_foreground),
                     fallback = painterResource(R.drawable.ic_launcher_foreground)
@@ -310,6 +349,7 @@ private fun UserInfoCard(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
 private fun UserInfoCardPreview() {
@@ -407,7 +447,8 @@ private fun MenuSection(
     onPostManagement: () -> Unit,
     onDesignSystem: () -> Unit,
     onSettings: () -> Unit,
-    onAbout: () -> Unit
+    onAbout: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Text(
         text = "功能菜单",
@@ -431,17 +472,17 @@ private fun MenuSection(
                 onClick = onPostManagement
             )
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-            )
-
-            MenuItem(
-                icon = Icons.Default.Settings,
-                title = "设置",
-                subtitle = "个性化设置和隐私选项",
-                onClick = onSettings
-            )
+//            HorizontalDivider(
+//                modifier = Modifier.padding(horizontal = 16.dp),
+//                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+//            )
+//
+//            MenuItem(
+//                icon = Icons.Default.Settings,
+//                title = "设置",
+//                subtitle = "个性化设置和隐私选项",
+//                onClick = onSettings
+//            )
 
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -465,8 +506,21 @@ private fun MenuSection(
                 icon = Icons.Default.Info,
                 title = "关于",
                 subtitle = "版本信息和帮助",
-                onClick = onAbout,
-                showDivider = false
+                onClick = onAbout
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
+
+            MenuItem(
+                icon = Icons.Default.Logout,
+                title = "退出登录",
+                subtitle = "安全退出当前账号",
+                onClick = onLogout,
+                showDivider = false,
+                isDanger = true
             )
         }
     }
@@ -535,7 +589,8 @@ private fun MenuItem(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
-    showDivider: Boolean = true
+    showDivider: Boolean = true,
+    isDanger: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -547,7 +602,7 @@ private fun MenuItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp)
         )
 
@@ -561,7 +616,7 @@ private fun MenuItem(
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = TangyuanGeneralFontFamily,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,

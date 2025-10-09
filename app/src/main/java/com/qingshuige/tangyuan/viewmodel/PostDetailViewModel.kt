@@ -10,6 +10,7 @@ import com.qingshuige.tangyuan.model.PostDetailState
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostDetailRepository
 import com.qingshuige.tangyuan.utils.ImageSaveUtils
+import com.qingshuige.tangyuan.utils.UIUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -149,6 +150,7 @@ class PostDetailViewModel @Inject constructor(
                         isCreatingComment = false,
                         commentError = e.message ?: "评论发布失败"
                     )
+                    UIUtils.showError(e.message ?: "评论发布失败")
                 }
                 .collect { message ->
                     _state.value = _state.value.copy(
@@ -156,6 +158,7 @@ class PostDetailViewModel @Inject constructor(
                         replyToComment = null,
                         commentError = null
                     )
+                    UIUtils.showSuccess("评论发布成功")
                     // 评论发布成功后，刷新评论列表
                     refreshComments()
                 }
@@ -172,19 +175,21 @@ class PostDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         error = e.message ?: "删除评论失败"
                     )
+                    UIUtils.showError(e.message ?: "删除评论失败")
                 }
                 .collect { success ->
                     if (success) {
+                        UIUtils.showSuccess("评论已删除")
                         // 删除成功后，从本地列表中移除该评论
                         val updatedComments = _state.value.comments.filter { comment ->
-                            comment.commentId != commentId && 
+                            comment.commentId != commentId &&
                             comment.replies.none { it.commentId == commentId }
                         }.map { comment ->
                             comment.copy(
                                 replies = comment.replies.filter { it.commentId != commentId }
                             )
                         }
-                        
+
                         _state.value = _state.value.copy(comments = updatedComments)
                     }
                 }

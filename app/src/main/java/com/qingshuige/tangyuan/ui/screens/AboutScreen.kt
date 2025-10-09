@@ -1,5 +1,9 @@
 package com.qingshuige.tangyuan.ui.screens
 
+import android.content.Intent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -12,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,27 +28,83 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.ui.components.AuroraBackground
+import com.qingshuige.tangyuan.ui.components.GlobalMessageHost
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanTheme
+import com.qingshuige.tangyuan.viewmodel.MessageViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    messageViewModel: MessageViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val currentMessage by messageViewModel.currentMessage.collectAsState()
 
-    Scaffold(topBar = {
-        TopAppBar(
+    // 彩蛋：记录点击次数和时间
+    var clickCount by remember { mutableIntStateOf(0) }
+    var lastClickTime by remember { mutableLongStateOf(0L) }
+    var shouldOpenGithub by remember { mutableIntStateOf(0) }
+
+    // Logo点击处理
+    val onLogoClick = {
+        val currentTime = System.currentTimeMillis()
+        // 如果两次点击间隔超过500ms，重置计数
+        if (currentTime - lastClickTime > 500) {
+            clickCount = 1
+        } else {
+            clickCount++
+        }
+        lastClickTime = currentTime
+
+        // 连续点击5次触发彩蛋
+        if (clickCount >= 5) {
+            clickCount = 0
+            // 显示全局消息
+            messageViewModel.showSuccess("看看你的嵴👀")
+            // 触发延迟跳转
+            shouldOpenGithub++
+        }
+    }
+
+    // 延迟跳转到GitHub
+    LaunchedEffect(shouldOpenGithub) {
+        if (shouldOpenGithub > 0) {
+            delay(1500) // 延迟1.5秒，让用户看到提示
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, "https://github.com/MitochondriaCN".toUri())
+                context.startActivity(intent)
+            } catch (_: Exception) {
+                messageViewModel.showError("无法打开浏览器")
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(topBar = {
+            TopAppBar(
             title = {
                 Text(
                     text = "关于",
@@ -57,7 +117,7 @@ fun AboutScreen(
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "返回",
                         tint = MaterialTheme.colorScheme.onSurface
                     )
@@ -91,7 +151,13 @@ fun AboutScreen(
                 Icon(
                     painter = painterResource(R.drawable.ic_launcher_foreground),
                     contentDescription = "App Logo",
-                    modifier = Modifier.size(100.dp),
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onLogoClick
+                        ),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -145,6 +211,13 @@ fun AboutScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+
+        // 页面内的全局消息提示
+        GlobalMessageHost(
+            message = currentMessage,
+            onDismiss = { messageViewModel.dismiss() }
+        )
     }
 }
 

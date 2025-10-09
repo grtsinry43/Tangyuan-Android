@@ -32,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.model.Category
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
+import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.viewmodel.CreatePostViewModel
 
 // 新增：用于管理 BottomSheet 状态的枚举
@@ -40,11 +41,12 @@ private enum class BottomSheetType { NONE, SECTION, CATEGORY }
 // 新增：用于表示分区的简单数据类
 private data class Section(val id: Int, val name: String)
 
-private val sections = listOf(Section(0, "聊一聊"), Section(1, "侃一侃"))
+private val sections = listOf(Section(1, "聊一聊"), Section(2, "侃一侃"))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePostScreen(
+    sectionId: Int? = 1,
     onBackClick: () -> Unit = {},
     onPostSuccess: () -> Unit = {},
     viewModel: CreatePostViewModel = hiltViewModel()
@@ -77,15 +79,20 @@ fun CreatePostScreen(
     // 监听发布成功
     LaunchedEffect(uiState.success) {
         if (uiState.success) {
+            UIUtils.showSuccess("发布成功")
             onPostSuccess()
             viewModel.resetState()
         }
     }
 
+    LaunchedEffect(sectionId) {
+        sectionId?.let { viewModel.selectSection(it) }
+    }
+
     // 显示错误提示
-    uiState.error?.let {
-        LaunchedEffect(it) {
-            kotlinx.coroutines.delay(3000)
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            UIUtils.showError(it)
             viewModel.clearError()
         }
     }
@@ -178,90 +185,62 @@ fun CreatePostScreen(
             )
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .verticalScroll(scrollState)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
 
-                // 内容输入
-                ContentInput(
-                    content = uiState.content,
-                    onContentChange = { viewModel.updateContent(it) },
-                    charCount = uiState.contentCharCount,
-                    isValid = uiState.isContentValid
+            // 内容输入
+            ContentInput(
+                content = uiState.content,
+                onContentChange = { viewModel.updateContent(it) },
+                charCount = uiState.contentCharCount,
+                isValid = uiState.isContentValid
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 修改：使用新的选择器样式
+                SelectionField(
+                    label = "选择分区",
+                    selectedValueText = sections.find { it.id == uiState.selectedSectionId }?.name
+                        ?: "请选择分区",
+                    onClick = { activeSheet = BottomSheetType.SECTION }
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // 修改：使用新的选择器样式
-                    SelectionField(
-                        label = "选择分区",
-                        selectedValueText = sections.find { it.id == uiState.selectedSectionId }?.name
-                            ?: "请选择分区",
-                        onClick = { activeSheet = BottomSheetType.SECTION }
-                    )
+                // 修改：使用新的选择器样式
+                SelectionField(
+                    label = "选择分类",
+                    selectedValueText = uiState.categories.find { it.categoryId == uiState.selectedCategoryId }?.baseName
+                        ?: "请选择分类",
+                    isLoading = uiState.isLoadingCategories,
+                    onClick = { activeSheet = BottomSheetType.CATEGORY }
+                )
+            }
 
-                    // 修改：使用新的选择器样式
-                    SelectionField(
-                        label = "选择分类",
-                        selectedValueText = uiState.categories.find { it.categoryId == uiState.selectedCategoryId }?.baseName
-                            ?: "请选择分类",
-                        isLoading = uiState.isLoadingCategories,
-                        onClick = { activeSheet = BottomSheetType.CATEGORY }
-                    )
-                }
-
-                // 图片选择
-                ImageSelector(
-                    selectedImages = uiState.selectedImageUris,
-                    uploadProgress = uiState.uploadProgress,
-                    remainingSlots = uiState.remainingImageSlots,
-                    onAddImage = {
-                        imagePickerLauncher.launch(
-                            androidx.activity.result.PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
+            // 图片选择
+            ImageSelector(
+                selectedImages = uiState.selectedImageUris,
+                uploadProgress = uiState.uploadProgress,
+                remainingSlots = uiState.remainingImageSlots,
+                onAddImage = {
+                    imagePickerLauncher.launch(
+                        androidx.activity.result.PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
                         )
-                    },
-                    onRemoveImage = { viewModel.removeImageAt(it) }
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
-            // 错误提示 (保持不变)
-            AnimatedVisibility(
-                visible = uiState.error != null,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    tonalElevation = 4.dp
-                ) {
-                    Text(
-                        text = uiState.error ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp)
                     )
-                }
-            }
+                },
+                onRemoveImage = { viewModel.removeImageAt(it) }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

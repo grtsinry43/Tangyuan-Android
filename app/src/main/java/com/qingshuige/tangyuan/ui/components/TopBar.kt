@@ -76,7 +76,7 @@ fun TangyuanTopBar(
     onBackClick: (() -> Unit)? = null,
     onAvatarClick: (() -> Unit)? = null,
     onAnnouncementClick: (() -> Unit)? = null,
-    onPostClick: (() -> Unit)? = null,
+    onPostClick: ((sectionId: Int) -> Unit)? = null,
     onActionClick: (() -> Unit)? = null
 ) {
     TopAppBar(
@@ -170,7 +170,7 @@ fun TangyuanTopBar(
 
                     // 发表按钮（除我的一级页面都显示）
                     if (!(pageLevel == PageLevel.PRIMARY && currentScreen == Screen.User)) {
-                        IconButton(onClick = { onPostClick?.invoke() }) {
+                        IconButton(onClick = { onPostClick?.invoke(if (currentScreen == Screen.Topic) 2 else 1) }) {
                             Icon(
                                 Icons.Filled.Add,
                                 contentDescription = "发表",

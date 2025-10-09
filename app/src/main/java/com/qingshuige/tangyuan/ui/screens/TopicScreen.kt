@@ -1,59 +1,74 @@
 package com.qingshuige.tangyuan.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.qingshuige.tangyuan.model.PostCard
-import com.qingshuige.tangyuan.ui.components.PostCardItem
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
-import com.qingshuige.tangyuan.viewmodel.TalkViewModel
-import kotlinx.coroutines.launch
+import com.qingshuige.tangyuan.viewmodel.TopicViewModel
 
-/**
- * 聊一聊页面
- */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun TalkScreen(
+fun TopicScreen(
     onPostClick: (Int) -> Unit = {},
     onAuthorClick: (Int) -> Unit = {},
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
-    viewModel: TalkViewModel = hiltViewModel(),
+    viewModel: TopicViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
-    
+
     // 监听滚动，实现上拉加载更多
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo }
             .collect { layoutInfo ->
                 val totalItems = layoutInfo.totalItemsCount
                 val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                
+
                 // 当滚动到倒数第3个item时开始加载更多
-                if (totalItems > 0 && lastVisibleItemIndex >= totalItems - 3 && 
-                    !uiState.isLoading && uiState.hasMore && uiState.error == null) {
+                if (totalItems > 0 && lastVisibleItemIndex >= totalItems - 3 &&
+                    !uiState.isLoading && uiState.hasMore && uiState.error == null
+                ) {
                     viewModel.loadMorePosts()
                 }
             }
     }
-    
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -67,7 +82,7 @@ fun TalkScreen(
                 uiState.isLoading && uiState.posts.isEmpty() -> {
                     LoadingContent()
                 }
-                
+
                 // 错误状态
                 uiState.error != null && uiState.posts.isEmpty() -> {
                     val errorMessage = uiState.error
@@ -79,12 +94,12 @@ fun TalkScreen(
                         }
                     )
                 }
-                
+
                 // 空状态
                 uiState.posts.isEmpty() && !uiState.isLoading -> {
                     EmptyContent(onRefresh = viewModel::refreshPosts)
                 }
-                
+
                 // 正常内容
                 else -> {
                     PostList(
@@ -108,80 +123,6 @@ fun TalkScreen(
                         animatedContentScope = animatedContentScope
                     )
                 }
-            }
-        }
-    }
-}
-
-/**
- * 文章列表
- */
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun PostList(
-    posts: List<PostCard>,
-    listState: LazyListState,
-    isLoadingMore: Boolean,
-    hasMore: Boolean,
-    error: String?,
-    onPostClick: (Int) -> Unit,
-    onAuthorClick: (Int) -> Unit,
-    onLikeClick: (Int) -> Unit,
-    onCommentClick: (Int) -> Unit,
-    onShareClick: (Int) -> Unit,
-    onBookmarkClick: (Int) -> Unit,
-    onMoreClick: (Int) -> Unit,
-    onImageClick: (Int, Int) -> Unit,
-    onErrorDismiss: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null
-) {
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 80.dp) // 为底部导航栏留空间
-    ) {
-        items(
-            items = posts,
-            key = { it.postId }
-        ) { postCard ->
-            PostCardItem(
-                postCard = postCard,
-                onPostClick = onPostClick,
-                onAuthorClick = onAuthorClick,
-                onLikeClick = onLikeClick,
-                onCommentClick = onCommentClick,
-                onShareClick = onShareClick,
-                onBookmarkClick = onBookmarkClick,
-                onMoreClick = onMoreClick,
-                onImageClick = onImageClick,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope,
-                sharedElementPrefix = "talk_post_${postCard.postId}" // 使用帖子ID作为唯一前缀
-            )
-        }
-        
-        // 加载更多指示器
-        if (isLoadingMore && hasMore) {
-            item {
-                LoadingMoreIndicator()
-            }
-        }
-        
-        // 没有更多数据提示
-        if (!hasMore && posts.isNotEmpty()) {
-            item {
-                NoMoreDataIndicator()
-            }
-        }
-        
-        // 错误提示
-        error?.let {
-            item {
-                ErrorSnackbar(
-                    message = it,
-                    onDismiss = onErrorDismiss
-                )
             }
         }
     }
@@ -237,7 +178,7 @@ private fun ErrorContent(
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.SemiBold
             )
-            
+
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
@@ -245,7 +186,7 @@ private fun ErrorContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            
+
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(
@@ -288,7 +229,7 @@ private fun EmptyContent(onRefresh: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold
             )
-            
+
             Text(
                 text = "下拉刷新或稍后再试",
                 style = MaterialTheme.typography.bodyMedium,
@@ -296,7 +237,7 @@ private fun EmptyContent(onRefresh: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            
+
             TextButton(onClick = onRefresh) {
                 Text(
                     text = "刷新",
@@ -390,7 +331,7 @@ private fun ErrorSnackbar(
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.weight(1f)
             )
-            
+
             TextButton(onClick = onDismiss) {
                 Text(
                     text = "知道了",
