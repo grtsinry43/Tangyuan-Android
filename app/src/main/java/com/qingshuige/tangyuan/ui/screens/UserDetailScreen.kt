@@ -390,7 +390,7 @@ private fun UserProfileSection(
                         }
 
                         // 邮箱信息胶囊
-                        if (user.email.isNotBlank()) {
+                        if (!user.email.isNullOrBlank()) {
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -426,7 +426,7 @@ private fun UserProfileSection(
         Spacer(modifier = Modifier.height(20.dp))
 
         // 用户签名
-        if (user.bio.isNotBlank()) {
+        if (!user.bio.isNullOrBlank()) {
             Text(
                 text = user.bio.withPanguSpacing(),
                 style = MaterialTheme.typography.bodyMedium,

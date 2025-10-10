@@ -175,7 +175,7 @@ private suspend fun PostMetadata.toPostCard(
             authorId = author.userId,
             authorName = author.nickName.ifBlank { "匿名用户" },
             authorAvatar = author.avatarGuid,
-            authorBio = author.bio,
+            authorBio = author.bio ?: "",
             
             categoryId = this@toPostCard.categoryId,
             categoryName = category?.baseName ?: "未分类",
@@ -210,7 +210,7 @@ private fun PostMetadata.toSimplePostCard(author: User): PostCard {
         authorId = author.userId,
         authorName = author.nickName.ifBlank { "匿名用户" },
         authorAvatar = author.avatarGuid,
-        authorBio = author.bio,
+        authorBio = author.bio ?: "",
         
         categoryId = this.categoryId,
         categoryName = "分类 ${this.categoryId}", // 简化显示

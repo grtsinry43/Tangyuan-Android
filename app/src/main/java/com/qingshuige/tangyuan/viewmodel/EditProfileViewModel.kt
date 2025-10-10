@@ -86,9 +86,9 @@ class EditProfileViewModel @Inject constructor(
                         isLoading = false,
                         currentUser = user,
                         nickName = user.nickName,
-                        email = user.email,
+                        email = user.email ?: "",
                         region = user.isoRegionName,
-                        bio = user.bio
+                        bio = user.bio ?: "",
                     )
                 }
         }

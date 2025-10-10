@@ -252,7 +252,7 @@ private fun UserInfoCard(
 
             // 地区和邮箱胶囊 - 一行
             AnimatedVisibility(
-                visible = user.isoRegionName.isNotBlank() || user.email.isNotBlank(),
+                visible = user.isoRegionName.isNotBlank() || !user.email.isNullOrBlank(),
                 enter = slideInHorizontally(
                     initialOffsetX = { it },
                     animationSpec = spring(
@@ -299,7 +299,7 @@ private fun UserInfoCard(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     // 邮箱信息胶囊
-                    if (user.email.isNotBlank()) {
+                    if (!user.email.isNullOrBlank()) {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -333,7 +333,7 @@ private fun UserInfoCard(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 用户签名
-            if (user.bio.isNotBlank()) {
+            if (!user.bio.isNullOrBlank()) {
                 Text(
                     text = user.bio.withPanguSpacing(),
                     style = MaterialTheme.typography.bodyMedium,

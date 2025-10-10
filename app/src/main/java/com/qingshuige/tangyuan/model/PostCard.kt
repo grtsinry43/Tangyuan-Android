@@ -138,7 +138,7 @@ fun PostMetadata.toPostCard(
         authorId = author.userId,
         authorName = author.nickName.ifBlank { "匿名用户" },
         authorAvatar = author.avatarGuid,
-        authorBio = author.bio,
+        authorBio = author.bio ?: "",
         
         categoryId = category.categoryId,
         categoryName = category.baseName ?: "未分类",

@@ -117,7 +117,7 @@ fun Comment.toCommentCard(
         authorId = author.userId,
         authorName = author.nickName.ifBlank { "匿名用户" },
         authorAvatar = author.avatarGuid,
-        authorBio = author.bio,
+        authorBio = author.bio ?: "",
         
         replies = replies,
         hasMoreReplies = hasMoreReplies,

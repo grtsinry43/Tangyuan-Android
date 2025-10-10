@@ -5,8 +5,8 @@ data class User(
     val nickName: String = "",
     val phoneNumber: String = "",
     val isoRegionName: String = "",
-    val email: String = "",
-    val bio: String = "",
+    val email: String? = "",
+    val bio: String? = "",
     val avatarGuid: String = "",
     val password: String? = ""
 )

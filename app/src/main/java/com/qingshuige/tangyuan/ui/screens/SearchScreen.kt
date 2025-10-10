@@ -179,7 +179,7 @@ fun SearchScreen(
                                 )
                             },
                             headlineContent = { Text(user.nickName) },
-                            supportingContent = { Text(user.email.ifBlank { "" }) },
+                            supportingContent = { Text(user.email.orEmpty()) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp),
