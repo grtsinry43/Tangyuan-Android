@@ -49,9 +49,20 @@ class PostDetailViewModel @Inject constructor(
                 // 先加载帖子详情，立即更新UI
                 postDetailRepository.getPostCard(postId)
                     .catch { e ->
+                        val friendlyMessage = when {
+                            e.message?.contains("404", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                            e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
+                            e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                            e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                            e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                            e.message?.contains("post body", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                            e.message?.contains("deleted", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                            e.message?.contains("not found", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                            else -> "这个帖子可能不存在或已删除"
+                        }
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            error = e.message ?: "加载帖子失败"
+                            error = friendlyMessage
                         )
                     }
                     .collect { postCard ->
@@ -65,9 +76,20 @@ class PostDetailViewModel @Inject constructor(
                         loadComments(postId, currentUserId)
                     }
             } catch (e: Exception) {
+                val friendlyMessage = when {
+                    e.message?.contains("404", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                    e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
+                    e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                    e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                    e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                    e.message?.contains("post body", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                    e.message?.contains("deleted", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                    e.message?.contains("not found", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
+                    else -> "这个帖子可能不存在或已删除"
+                }
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = e.message ?: "加载失败"
+                    error = friendlyMessage
                 )
             }
         }

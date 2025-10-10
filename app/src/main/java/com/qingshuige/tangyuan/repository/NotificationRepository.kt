@@ -16,10 +16,13 @@ class NotificationRepository @Inject constructor(
     fun getAllNotifications(userId: Int): Flow<List<NewNotification>> = flow {
         val response = apiInterface.getAllNotificationsByUserId(userId).awaitResponse()
         if (response.isSuccessful) {
-            response.body()?.let { emit(it) } 
+            response.body()?.let { emit(it) }
                 ?: emit(emptyList())
         } else {
-            throw Exception("Failed to get notifications: ${response.message()}")
+            when (response.code()) {
+                404 -> emit(emptyList()) // 404表示没有通知，返回空列表
+                else -> throw Exception("Failed to get notifications: ${response.message()}")
+            }
         }
     }
     

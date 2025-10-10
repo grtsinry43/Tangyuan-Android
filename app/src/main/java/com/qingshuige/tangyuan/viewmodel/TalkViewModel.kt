@@ -49,10 +49,18 @@ class TalkViewModel @Inject constructor(
                     exceptedIds = if (isRefresh) emptyList() else _loadedPostIds.toList()
                 )
                 .catch { e ->
+                    val friendlyMessage = when {
+                        e.message?.contains("404", ignoreCase = true) == true -> "暂无更多内容"
+                        e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
+                        e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                        e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                        e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                        else -> "网络连接失败，请检查网络设置"
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        error = e.message ?: "加载失败"
+                        error = friendlyMessage
                     )
                 }
                 .collect { newPosts ->
@@ -75,10 +83,18 @@ class TalkViewModel @Inject constructor(
                 }
                 
             } catch (e: Exception) {
+                val friendlyMessage = when {
+                    e.message?.contains("404", ignoreCase = true) == true -> "暂无更多内容"
+                    e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
+                    e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                    e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                    e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
+                    else -> "网络连接失败，请检查网络设置"
+                }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    error = e.message ?: "加载失败"
+                    error = friendlyMessage
                 )
             }
         }
