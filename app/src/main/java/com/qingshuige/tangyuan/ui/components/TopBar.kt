@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +62,10 @@ import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.navigation.Screen
 import com.qingshuige.tangyuan.network.TokenManager
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 
 // 定义页面层级类型
 enum class PageLevel {
@@ -68,7 +73,7 @@ enum class PageLevel {
     SECONDARY   // 二级页面
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
 @Composable
 fun TangyuanTopBar(
     currentScreen: Screen,
@@ -79,7 +84,8 @@ fun TangyuanTopBar(
     onAnnouncementClick: (() -> Unit)? = null,
     onPostClick: ((sectionId: Int) -> Unit)? = null,
     onActionClick: (() -> Unit)? = null,
-    onSearchClick: (() -> Unit)? = null
+    onSearchClick: (() -> Unit)? = null,
+    hazeState: HazeState? = null
 ) {
     TopAppBar(
         title = {
@@ -210,10 +216,23 @@ fun TangyuanTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = Color.Transparent,
             titleContentColor = MaterialTheme.colorScheme.onSurface
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (hazeState != null) {
+                    Modifier.hazeChild(
+                        state = hazeState,
+                        style = HazeMaterials.thick(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                        )
+                    )
+                } else {
+                    Modifier
+                }
+            )
     )
 }
 

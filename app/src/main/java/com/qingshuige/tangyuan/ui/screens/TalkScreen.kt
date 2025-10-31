@@ -143,7 +143,7 @@ fun PostList(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 80.dp) // 为底部导航栏留空间
+        contentPadding = PaddingValues(bottom = 80.dp, top = 108.dp) // 为底部导航栏留空间
     ) {
         items(
             items = posts,

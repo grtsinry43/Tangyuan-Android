@@ -18,10 +18,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.qingshuige.tangyuan.navigation.Screen
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 
 // 定义一个数据类来存储底部导航项所需的所有信息
 private data class BottomNavItem(
@@ -29,8 +34,13 @@ private data class BottomNavItem(
     val icon: ImageVector,
 )
 
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-fun TangyuanBottomAppBar(currentScreen: Screen, onScreenSelected: (Screen) -> Unit) {
+fun TangyuanBottomAppBar(
+    currentScreen: Screen,
+    onScreenSelected: (Screen) -> Unit,
+    hazeState: HazeState
+) {
     // 定义底部导航栏的项目列表
     val items = listOf(
         BottomNavItem(Screen.Talk, Icons.Filled.ChatBubble),
@@ -45,6 +55,12 @@ fun TangyuanBottomAppBar(currentScreen: Screen, onScreenSelected: (Screen) -> Un
         modifier = Modifier
             .fillMaxWidth()
             .height(84.dp)
+            .hazeChild(
+                state = hazeState,
+                style = HazeMaterials.thick(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                )
+            )
             // 绘制顶部的 1dp 分隔线
             .drawBehind {
                 val strokeWidth = 1.dp.toPx()
@@ -55,7 +71,7 @@ fun TangyuanBottomAppBar(currentScreen: Screen, onScreenSelected: (Screen) -> Un
                     strokeWidth = strokeWidth
                 )
             },
-        containerColor = MaterialTheme.colorScheme.surfaceVariant
+        containerColor = Color.Transparent
     ) {
         // 循环渲染所有的导航项
         items.forEach { item ->

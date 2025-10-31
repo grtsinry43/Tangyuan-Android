@@ -3,12 +3,18 @@ package com.qingshuige.tangyuan
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -788,8 +794,12 @@ fun MainFlow(
         }
     }
 
+    // 创建Haze状态用于模糊效果
+    val hazeState = remember { HazeState() }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TangyuanTopBar(
                 currentScreen = currentScreen,
@@ -798,26 +808,34 @@ fun MainFlow(
                 onAvatarClick = onAvatarClick,
                 onAnnouncementClick = { postViewModel.getNoticePost() },
                 onPostClick = onCreatePostClick,
-                onSearchClick = onSearchClick
+                onSearchClick = onSearchClick,
+                hazeState = hazeState
             )
         },
         bottomBar = {
-            TangyuanBottomAppBar(currentScreen) { selectedScreen ->
-                mainNavController.navigate(selectedScreen.route) {
-                    popUpTo(mainNavController.graph.findStartDestination().id) {
-                        saveState = true
+            TangyuanBottomAppBar(
+                currentScreen = currentScreen,
+                onScreenSelected = { selectedScreen ->
+                    mainNavController.navigate(selectedScreen.route) {
+                        popUpTo(mainNavController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }
+                },
+                hazeState = hazeState
+            )
         }
     ) { innerPadding ->
-        NavHost(
-            navController = mainNavController,
-            startDestination = Screen.Talk.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = {
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = mainNavController,
+                startDestination = Screen.Talk.route,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(state = hazeState),
+                enterTransition = {
                 slideInHorizontally(
                     initialOffsetX = { it / 2 },
                     animationSpec = tween(
@@ -921,6 +939,7 @@ fun MainFlow(
                     animatedContentScope = animatedContentScope
                 )
             }
+        }
         }
     }
 }

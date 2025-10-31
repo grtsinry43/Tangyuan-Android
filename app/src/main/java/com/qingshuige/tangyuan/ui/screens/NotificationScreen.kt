@@ -89,6 +89,7 @@ fun NotificationScreen(
 
     Box(
         modifier = Modifier.fillMaxSize()
+            .padding(top = 108.dp, bottom = 80.dp)
     ) {
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,

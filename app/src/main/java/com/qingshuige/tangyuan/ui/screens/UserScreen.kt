@@ -100,7 +100,8 @@ fun UserScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(top = 108.dp, bottom = 80.dp, start = 16.dp, end = 16.dp)
+
     ) {
         if (isLoggedIn && currentUser != null) {
             // 用户信息卡片
@@ -182,7 +183,10 @@ private fun UserInfoCard(
                                         rememberSharedContentState(key = "edit_profile_avatar"),
                                         animatedVisibilityScope = animatedContentScope,
                                         boundsTransform = { _, _ ->
-                                            tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                                            tween(
+                                                durationMillis = 400,
+                                                easing = FastOutSlowInEasing
+                                            )
                                         }
                                     )
                                 }
