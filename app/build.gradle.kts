@@ -1,9 +1,21 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.kapt)
+}
+
+// Load local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    FileInputStream(localPropertiesFile).use { stream ->
+        localProperties.load(stream)
+    }
 }
 
 android {
@@ -18,6 +30,22 @@ android {
         versionName = "1.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // OpenPanel Analytics Configuration
+        // Priority: Environment Variables > local.properties > Default Values
+        val openPanelClientId = System.getenv("OPENPANEL_CLIENT_ID")
+            ?: localProperties.getProperty("openpanel.client.id")
+            ?: ""
+        val openPanelClientSecret = System.getenv("OPENPANEL_CLIENT_SECRET")
+            ?: localProperties.getProperty("openpanel.client.secret")
+            ?: ""
+        val openPanelBaseUrl = System.getenv("OPENPANEL_BASE_URL")
+            ?: localProperties.getProperty("openpanel.base.url")
+            ?: "https://openpanel.grtsinry43.com/api/"
+
+        buildConfigField("String", "OPENPANEL_CLIENT_ID", "\"$openPanelClientId\"")
+        buildConfigField("String", "OPENPANEL_CLIENT_SECRET", "\"$openPanelClientSecret\"")
+        buildConfigField("String", "OPENPANEL_BASE_URL", "\"$openPanelBaseUrl\"")
     }
 
     buildTypes {

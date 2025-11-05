@@ -31,6 +31,10 @@ jobs:
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
+        env:
+          OPENPANEL_CLIENT_ID: ${{ secrets.OPENPANEL_CLIENT_ID }}
+          OPENPANEL_CLIENT_SECRET: ${{ secrets.OPENPANEL_CLIENT_SECRET }}
+          OPENPANEL_BASE_URL: ${{ secrets.OPENPANEL_BASE_URL }}
 
       - name: Sign APK
         id: sign_apk

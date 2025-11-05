@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.User
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.MediaRepository
@@ -183,6 +184,20 @@ class EditProfileViewModel @Inject constructor(
                             error = "保存失败: ${exception.message}"
                         )
                         UIUtils.showError("保存失败: ${exception.message}")
+
+                        // 追踪个人信息更新失败
+                        try {
+                            OpenPanelClient.getInstance().track("profile_updated", mapOf(
+                                "updated_nickname" to (currentState.nickName != originalUser?.nickName),
+                                "updated_email" to (currentState.email != originalUser?.email),
+                                "updated_bio" to (currentState.bio != originalUser?.bio),
+                                "updated_avatar" to (currentState.newAvatarGuid != null),
+                                "success" to false,
+                                "error" to (exception.message ?: "unknown")
+                            ), userId = user.userId.toString())
+                        } catch (trackingError: Exception) {
+                            // OpenPanel 追踪失败不影响主要功能
+                        }
                     }
                     .collect { success ->
                         if (success) {
@@ -195,6 +210,33 @@ class EditProfileViewModel @Inject constructor(
                             )
                             originalUser = updatedUser
                             UIUtils.showSuccess("保存成功")
+
+                            // 追踪个人信息更新成功
+                            try {
+                                OpenPanelClient.getInstance().track("profile_updated", mapOf(
+                                    "updated_nickname" to (currentState.nickName != originalUser?.nickName),
+                                    "updated_email" to (currentState.email != originalUser?.email),
+                                    "updated_bio" to (currentState.bio != originalUser?.bio),
+                                    "updated_avatar" to (currentState.newAvatarGuid != null),
+                                    "success" to true
+                                ), userId = user.userId.toString())
+
+                                // 更新用户识别信息
+                                OpenPanelClient.getInstance().identify(
+                                    profileId = user.userId.toString(),
+                                    firstName = currentState.nickName,
+                                    email = currentState.email.takeIf { it.isNotEmpty() },
+                                    properties = mapOf(
+                                        "has_bio" to currentState.bio.isNotEmpty(),
+                                        "has_avatar" to (updatedUser.avatarGuid.isNotEmpty()),
+                                        "profile_complete" to (currentState.nickName.isNotEmpty() &&
+                                                currentState.bio.isNotEmpty() &&
+                                                updatedUser.avatarGuid.isNotEmpty())
+                                    )
+                                )
+                            } catch (trackingError: Exception) {
+                                // OpenPanel 追踪失败不影响主要功能
+                            }
                         } else {
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,

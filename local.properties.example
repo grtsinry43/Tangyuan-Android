@@ -1,0 +1,12 @@
+# OpenPanel Analytics Configuration Example
+# Copy this file to local.properties and fill in your actual values
+# IMPORTANT: local.properties is already in .gitignore - never commit credentials!
+
+# OpenPanel Client ID
+openpanel.client.id=your-client-id-here
+
+# OpenPanel Client Secret
+openpanel.client.secret=your-client-secret-here
+
+# OpenPanel API Base URL
+openpanel.base.url=https://api.openpanel.dev/

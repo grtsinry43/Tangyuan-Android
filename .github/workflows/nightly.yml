@@ -32,6 +32,10 @@ jobs:
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
+        env:
+          OPENPANEL_CLIENT_ID: ${{ secrets.OPENPANEL_CLIENT_ID }}
+          OPENPANEL_CLIENT_SECRET: ${{ secrets.OPENPANEL_CLIENT_SECRET }}
+          OPENPANEL_BASE_URL: ${{ secrets.OPENPANEL_BASE_URL }}
 
       - name: Get current date
         id: date

@@ -1,12 +1,12 @@
 package com.qingshuige.tangyuan
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -729,6 +729,7 @@ fun App(
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MainFlow(
@@ -827,7 +828,7 @@ fun MainFlow(
                 hazeState = hazeState
             )
         }
-    ) { innerPadding ->
+    ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = mainNavController,

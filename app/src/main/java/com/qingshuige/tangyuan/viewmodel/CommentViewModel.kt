@@ -2,8 +2,10 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Comment
 import com.qingshuige.tangyuan.model.CreateCommentDto
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.CommentRepository
 import com.qingshuige.tangyuan.utils.collectFlow
 import com.qingshuige.tangyuan.utils.collectFlowList
@@ -29,7 +31,9 @@ data class CommentUiState(
 class CommentViewModel @Inject constructor(
     private val commentRepository: CommentRepository
 ) : ViewModel() {
-    
+
+    private val tokenManager = TokenManager()
+
     private val _commentUiState = MutableStateFlow(CommentUiState())
     val commentUiState: StateFlow<CommentUiState> = _commentUiState.asStateFlow()
     
@@ -92,12 +96,44 @@ class CommentViewModel @Inject constructor(
                         isCreating = false,
                         error = e.message
                     )
+
+                    // 追踪评论失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("comment_created", mapOf(
+                            "post_id" to createCommentDto.postId.toInt(),
+                            "comment_length" to (createCommentDto.content?.length ?: 0),
+                            "success" to false,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { result ->
                     _commentUiState.value = _commentUiState.value.copy(
                         isCreating = false,
                         createSuccess = true
                     )
+
+                    // 追踪评论成功
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("comment_created", mapOf(
+                            "post_id" to createCommentDto.postId.toInt(),
+                            "comment_length" to (createCommentDto.content?.length ?: 0),
+                            "has_parent" to (createCommentDto.parentCommentId != null),
+                            "success" to true
+                        ), userId = userId)
+
+                        // 为用户增加评论计数（仅登录用户）
+                        userId?.let {
+                            OpenPanelClient.getInstance().increment(it, "total_comments", 1)
+                        }
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
+
                     // Refresh comments for the post
                     getCommentsForPost(createCommentDto.postId.toInt())
                 }

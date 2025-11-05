@@ -2,8 +2,10 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.RecommendedPostsState
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,9 @@ import javax.inject.Inject
 class TalkViewModel @Inject constructor(
     private val postRepository: PostRepository
 ) : ViewModel() {
-    
+
+    private val tokenManager = TokenManager()
+
     private val _uiState = MutableStateFlow(RecommendedPostsState())
     val uiState: StateFlow<RecommendedPostsState> = _uiState.asStateFlow()
     
@@ -104,6 +108,18 @@ class TalkViewModel @Inject constructor(
      * 刷新文章列表
      */
     fun refreshPosts() {
+        // 追踪刷新操作
+        try {
+            val userId = tokenManager.getUserIdFromToken()?.toString()
+            OpenPanelClient.getInstance().track("posts_refreshed", mapOf(
+                "source" to "talk_screen",
+                "section_id" to defaultSectionId,
+                "timestamp" to System.currentTimeMillis()
+            ), userId = userId) // 登录用userId，未登录用设备ID
+        } catch (e: Exception) {
+            // OpenPanel 追踪失败不影响主要功能
+        }
+
         loadRecommendedPosts(isRefresh = true)
     }
     

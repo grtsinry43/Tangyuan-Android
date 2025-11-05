@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Category
 import com.qingshuige.tangyuan.model.CreatePostDto
 import com.qingshuige.tangyuan.model.CreatePostState
@@ -275,12 +276,42 @@ class CreatePostViewModel @Inject constructor(
                         isLoading = false,
                         success = true
                     )
+
+                    // 追踪发帖成功
+                    try {
+                        OpenPanelClient.getInstance().track("post_created", mapOf(
+                            "content_length" to state.content.length,
+                            "has_images" to state.selectedImageUris.isNotEmpty(),
+                            "image_count" to state.selectedImageUris.size,
+                            "category_id" to (state.selectedCategoryId ?: -1),
+                            "section_id" to state.selectedSectionId,
+                            "success" to true
+                        ), userId = userId.toString())
+
+                        // 为用户增加发帖计数
+                        OpenPanelClient.getInstance().increment(userId.toString(), "total_posts", 1)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "发布失败: ${e.message}"
                     )
+
+                    // 追踪发帖失败
+                    try {
+                        OpenPanelClient.getInstance().track("post_created", mapOf(
+                            "content_length" to state.content.length,
+                            "has_images" to state.selectedImageUris.isNotEmpty(),
+                            "image_count" to state.selectedImageUris.size,
+                            "success" to false,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId.toString())
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
         }
     }

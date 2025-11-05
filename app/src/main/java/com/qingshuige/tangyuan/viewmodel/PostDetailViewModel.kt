@@ -3,6 +3,7 @@ package com.qingshuige.tangyuan.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.CommentCard
 import com.qingshuige.tangyuan.model.CreateCommentDto
 import com.qingshuige.tangyuan.model.PostCard
@@ -71,7 +72,28 @@ class PostDetailViewModel @Inject constructor(
                             postCard = postCard,
                             isLoading = false
                         )
-                        
+
+                        // 追踪帖子查看事件
+                        try {
+                            val userId = if (currentUserId > 0) currentUserId.toString() else null
+                            OpenPanelClient.getInstance().track(
+                                eventName = "post_viewed",
+                                properties = mapOf(
+                                    "post_id" to postId,
+                                    "author_id" to postCard.authorId,
+                                    "category_id" to postCard.categoryId,
+                                    "section" to postCard.getSectionName(),
+                                    "has_images" to postCard.hasImages
+                                ),
+                                userId = userId
+                            )
+                        } catch (e: Exception) {
+                            // 追踪失败不影响主流程
+                            if (com.qingshuige.tangyuan.BuildConfig.DEBUG) {
+                                println("Analytics tracking failed: ${e.message}")
+                            }
+                        }
+
                         // 然后异步加载评论
                         loadComments(postId, currentUserId)
                     }
