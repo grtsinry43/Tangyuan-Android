@@ -80,6 +80,15 @@ class EditProfileViewModel @Inject constructor(
                         isLoading = false,
                         error = "加载用户信息失败: ${e.message}"
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_user_profile_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { user ->
                     originalUser = user
@@ -251,6 +260,15 @@ class EditProfileViewModel @Inject constructor(
                     error = "保存失败: ${e.message}"
                 )
                 UIUtils.showError("保存失败: ${e.message}")
+                // 追踪失败
+                try {
+                    val userId = tokenManager.getUserIdFromToken()?.toString()
+                    OpenPanelClient.getInstance().track("update_profile_fail", mapOf(
+                        "error" to (e.message ?: "unknown")
+                    ), userId = userId)
+                } catch (trackingError: Exception) {
+                    // OpenPanel 追踪失败不影响主要功能
+                }
             }
         }
     }
@@ -285,6 +303,15 @@ class EditProfileViewModel @Inject constructor(
                         )
                         UIUtils.showError("头像上传失败: ${e.message}")
                         file.delete()
+                        // 追踪失败
+                        try {
+                            val userId = tokenManager.getUserIdFromToken()?.toString()
+                            OpenPanelClient.getInstance().track("upload_avatar_fail", mapOf(
+                                "error" to (e.message ?: "unknown")
+                            ), userId = userId)
+                        } catch (trackingError: Exception) {
+                            // OpenPanel 追踪失败不影响主要功能
+                        }
                     }
                     .collect { result ->
                         // API 返回的是 Map<String, String>，其中包含图片的 GUID

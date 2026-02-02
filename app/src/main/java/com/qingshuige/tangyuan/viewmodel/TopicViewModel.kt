@@ -2,8 +2,10 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.RecommendedPostsState
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +64,18 @@ class TopicViewModel @Inject constructor(
                         isRefreshing = false,
                         error = friendlyMessage
                     )
+                    // 追踪失败
+                    try {
+                        val tokenManager = TokenManager()
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("home_load_fail", mapOf(
+                            "section_id" to defaultSectionId,
+                            "source" to "topic_screen",
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { newPosts ->
                     // 更新已加载的文章ID

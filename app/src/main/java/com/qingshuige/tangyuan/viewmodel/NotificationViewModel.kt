@@ -2,9 +2,11 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Comment
 import com.qingshuige.tangyuan.model.NewNotification
 import com.qingshuige.tangyuan.model.User
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.CommentRepository
 import com.qingshuige.tangyuan.repository.NotificationRepository
 import com.qingshuige.tangyuan.repository.UserRepository
@@ -51,6 +53,16 @@ class NotificationViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        val tokenManager = TokenManager()
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_notification_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { notifications ->
                     // 处理每个通知，根据类型获取相应的信息
@@ -166,6 +178,16 @@ class NotificationViewModel @Inject constructor(
                         isMarkingAsRead = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        val tokenManager = TokenManager()
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("notification_mark_read_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { success ->
                     if (success) {

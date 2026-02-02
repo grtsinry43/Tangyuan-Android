@@ -3,6 +3,7 @@ package com.qingshuige.tangyuan.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.CreateUserDto
 import com.qingshuige.tangyuan.model.LoginDto
 import com.qingshuige.tangyuan.model.User
@@ -145,6 +146,14 @@ class UserViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        OpenPanelClient.getInstance().track("login_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ))
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { result ->
                     // 登录成功，保存token
@@ -191,6 +200,14 @@ class UserViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        OpenPanelClient.getInstance().track("register_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ))
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { success ->
                     if (success) {
@@ -222,6 +239,15 @@ class UserViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        OpenPanelClient.getInstance().track("get_user_by_id_fail", mapOf(
+                            "destUserId" to userId.toString(),
+                            "error" to (e.message ?: "unknown")
+                        ))
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { user ->
                     _userUiState.value = _userUiState.value.copy(

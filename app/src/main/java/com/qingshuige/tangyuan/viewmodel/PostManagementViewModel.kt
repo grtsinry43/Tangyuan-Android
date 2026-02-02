@@ -2,6 +2,7 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.PostWithContent
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
@@ -56,6 +57,15 @@ class PostManagementViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_personal_posts_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { metadataList ->
                     // 获取每个帖子的内容

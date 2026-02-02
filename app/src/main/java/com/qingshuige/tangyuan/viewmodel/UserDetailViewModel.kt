@@ -2,11 +2,13 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Category
 import com.qingshuige.tangyuan.model.PostBody
 import com.qingshuige.tangyuan.model.PostMetadata
 import com.qingshuige.tangyuan.model.User
 import com.qingshuige.tangyuan.model.PostCard
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
 import com.qingshuige.tangyuan.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -68,6 +70,17 @@ class UserDetailViewModel @Inject constructor(
                 .catch { e ->
                     _errorMessage.value = e.message ?: "获取用户信息失败"
                     _isLoading.value = false
+                    // 追踪失败
+                    try {
+                        val tokenManager = TokenManager()
+                        val userId1 = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_user_info_fail", mapOf(
+                            "destUserId" to userId,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId1)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { userInfo ->
                     _user.value = userInfo
@@ -90,6 +103,17 @@ class UserDetailViewModel @Inject constructor(
             postRepository.getUserPosts(userId)
                 .catch { e ->
                     _isPostsLoading.value = false
+                    // 追踪失败
+                    try {
+                        val tokenManager = TokenManager()
+                        val userId1 = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_user_posts_fail", mapOf(
+                            "destUserId" to userId,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId1)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { posts ->
                     // 保存所有 Metadata，按时间倒序

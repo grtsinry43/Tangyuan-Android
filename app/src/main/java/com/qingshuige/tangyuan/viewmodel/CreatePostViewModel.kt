@@ -52,6 +52,15 @@ class CreatePostViewModel @Inject constructor(
                         isLoadingCategories = false,
                         error = "加载分类失败: ${e.message}"
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("new_post_get_category_fail", mapOf(
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { categories ->
                     _uiState.value = _uiState.value.copy(
@@ -163,6 +172,15 @@ class CreatePostViewModel @Inject constructor(
                             uploadProgress = _uiState.value.uploadProgress - uri.toString()
                         )
                         file.delete()
+                        // 追踪失败
+                        try {
+                            val userId = tokenManager.getUserIdFromToken()?.toString()
+                            OpenPanelClient.getInstance().track("upload_img_fail", mapOf(
+                                "error" to (e.message ?: "unknown")
+                            ), userId = userId)
+                        } catch (trackingError: Exception) {
+                            // OpenPanel 追踪失败不影响主要功能
+                        }
                     }
                     .collect { result ->
                         // API 返回的是 Map<String, String>，其中包含图片的 UUID

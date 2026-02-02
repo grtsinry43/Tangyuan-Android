@@ -69,6 +69,17 @@ class TalkViewModel @Inject constructor(
                         isRefreshing = false,
                         error = friendlyMessage
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("home_load_fail", mapOf(
+                            "section_id" to defaultSectionId,
+                            "source" to "talk_screen",
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { newPosts ->
                     // 更新已加载的文章ID

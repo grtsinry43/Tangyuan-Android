@@ -2,6 +2,7 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Category
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.repository.CategoryRepository
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import com.qingshuige.tangyuan.model.PostMetadata
+import com.qingshuige.tangyuan.network.TokenManager
 import kotlin.math.min
 
 data class CategoryStats(
@@ -224,6 +226,17 @@ class CategoryViewModel @Inject constructor(
                     isLoading = false,
                     error = e.message
                 )
+                // 追踪失败
+                try {
+                    val tokenManager = TokenManager()
+                    val userId = tokenManager.getUserIdFromToken()?.toString()
+                    OpenPanelClient.getInstance().track("load_category_fail", mapOf(
+                        "category_id" to categoryId,
+                        "error" to (e.message ?: "unknown")
+                    ), userId = userId)
+                } catch (trackingError: Exception) {
+                    // OpenPanel 追踪失败不影响主要功能
+                }
             }
         }
     }
@@ -240,23 +253,40 @@ class CategoryViewModel @Inject constructor(
             val chunk = allPostMetadatas.subList(startIndex, endIndex)
             val chunkIds = chunk.map { it.postId }
 
-            postRepository.getPostCards(chunkIds)
-                .catch { 
-                     // Ignore chunk error
-                }
-                .collect { newCards ->
-                    val currentList = _categoryUiState.value.posts.toMutableList()
-                    currentList.addAll(newCards)
-                    
-                    currentPage++
-                    val hasMore = currentPage * pageSize < allPostMetadatas.size
-                    
-                    _categoryUiState.value = _categoryUiState.value.copy(
-                        posts = currentList,
-                        isLoadingMore = false,
-                        hasMore = hasMore
+            try {
+                postRepository.getPostCards(chunkIds)
+                    .catch {
+                       throw it
+                    }
+                    .collect { newCards ->
+                        val currentList = _categoryUiState.value.posts.toMutableList()
+                        currentList.addAll(newCards)
+
+                        currentPage++
+                        val hasMore = currentPage * pageSize < allPostMetadatas.size
+
+                        _categoryUiState.value = _categoryUiState.value.copy(
+                            posts = currentList,
+                            isLoadingMore = false,
+                            hasMore = hasMore
+                        )
+                    }
+            } catch (e: Exception) {
+                // 追踪失败
+                try {
+                    val tokenManager = TokenManager()
+                    val userId = tokenManager.getUserIdFromToken()?.toString()
+                    OpenPanelClient.getInstance().track(
+                        "category_load_more_fail", mapOf(
+                            "chunk_size" to chunk.size,
+                            "chunk_ids" to chunkIds.toString(),
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId
                     )
+                } catch (trackingError: Exception) {
+                    // OpenPanel 追踪失败不影响主要功能
                 }
+            }
         }
     }
 }

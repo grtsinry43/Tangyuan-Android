@@ -49,6 +49,16 @@ class CommentViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("get_post_fail", mapOf(
+                            "post_id" to postId,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { comments ->
                     _commentUiState.value = _commentUiState.value.copy(

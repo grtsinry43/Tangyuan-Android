@@ -144,6 +144,16 @@ class PostDetailViewModel @Inject constructor(
                         isLoading = false,
                         error = e.message ?: "加载评论失败"
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_comment_fail", mapOf(
+                            "post_id" to postId,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { commentCards ->
                     _state.value = _state.value.copy(
@@ -208,6 +218,18 @@ class PostDetailViewModel @Inject constructor(
                         isCreatingComment = false,
                         commentError = e.message ?: "评论发布失败"
                     )
+                    // 追踪评论失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("comment_created", mapOf(
+                            "post_id" to createCommentDto.postId.toInt(),
+                            "comment_length" to (createCommentDto.content?.length ?: 0),
+                            "success" to false,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                     UIUtils.showError(e.message ?: "评论发布失败")
                 }
                 .collect { message ->
@@ -216,6 +238,17 @@ class PostDetailViewModel @Inject constructor(
                         replyToComment = null,
                         commentError = null
                     )
+                    // 追踪评论失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("comment_created", mapOf(
+                            "post_id" to createCommentDto.postId.toInt(),
+                            "comment_length" to (createCommentDto.content?.length ?: 0),
+                            "success" to true,
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                     UIUtils.showSuccess("评论发布成功")
                     // 评论发布成功后，刷新评论列表
                     refreshComments()
@@ -233,6 +266,17 @@ class PostDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         error = e.message ?: "删除评论失败"
                     )
+                    // 追踪评论失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("comment_deleted", mapOf(
+                            "comment_id" to commentId,
+                            "success" to false,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                     UIUtils.showError(e.message ?: "删除评论失败")
                 }
                 .collect { success ->
@@ -249,6 +293,17 @@ class PostDetailViewModel @Inject constructor(
                         }
 
                         _state.value = _state.value.copy(comments = updatedComments)
+
+                        // 追踪评论失败
+                        try {
+                            val userId = tokenManager.getUserIdFromToken()?.toString()
+                            OpenPanelClient.getInstance().track("comment_deleted", mapOf(
+                                "comment_id" to commentId,
+                                "success" to true,
+                            ), userId = userId)
+                        } catch (trackingError: Exception) {
+                            // OpenPanel 追踪失败不影响主要功能
+                        }
                     }
                 }
         }
@@ -273,6 +328,16 @@ class PostDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         error = e.message ?: "刷新评论失败"
                     )
+                    // 追踪评论失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("comment_refresh_fail", mapOf(
+                            "current_post_id" to currentPostId,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { commentCards ->
                     _state.value = _state.value.copy(comments = commentCards)
@@ -321,6 +386,17 @@ class PostDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         error = e.message ?: "加载回复失败"
                     )
+
+                    // 追踪评论失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("load_sub_comment_fail", mapOf(
+                            "current_post_id" to currentPostId,
+                            "error" to (e.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
                 .collect { replyCards ->
                     val updatedComments = _state.value.comments.map { comment ->
@@ -374,11 +450,33 @@ class PostDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         error = exception.message ?: "保存图片失败"
                     )
+                    // 追踪失败
+                    try {
+                        val userId = tokenManager.getUserIdFromToken()?.toString()
+                        OpenPanelClient.getInstance().track("save_img_fail", mapOf(
+                            "current_post_id" to currentPostId,
+                            "image_url" to imageUrl,
+                            "error" to (exception.message ?: "unknown")
+                        ), userId = userId)
+                    } catch (trackingError: Exception) {
+                        // OpenPanel 追踪失败不影响主要功能
+                    }
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = e.message ?: "保存图片失败"
                 )
+                // 追踪失败
+                try {
+                    val userId = tokenManager.getUserIdFromToken()?.toString()
+                    OpenPanelClient.getInstance().track("save_img_fail", mapOf(
+                        "current_post_id" to currentPostId,
+                        "image_url" to imageUrl,
+                        "error" to (e.message ?: "unknown")
+                    ), userId = userId)
+                } catch (trackingError: Exception) {
+                    // OpenPanel 追踪失败不影响主要功能
+                }
             }
         }
     }

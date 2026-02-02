@@ -2,11 +2,13 @@ package com.qingshuige.tangyuan.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Category
 import com.qingshuige.tangyuan.model.CreatPostMetadataDto
 import com.qingshuige.tangyuan.model.PostBody
 import com.qingshuige.tangyuan.model.PostMetadata
 import com.qingshuige.tangyuan.model.User
+import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
 import com.qingshuige.tangyuan.repository.UserRepository
 import com.qingshuige.tangyuan.repository.CategoryRepository
@@ -228,6 +230,16 @@ class PostViewModel @Inject constructor(
                     }
             } catch (e: Exception) {
                 _postUiState.value = _postUiState.value.copy(error = e.message)
+                // 追踪失败
+                try {
+                    val tokenManager = TokenManager()
+                    val userId = tokenManager.getUserIdFromToken()?.toString()
+                    OpenPanelClient.getInstance().track("get_notice_fail", mapOf(
+                        "error" to (e.message ?: "unknown")
+                    ), userId = userId)
+                } catch (trackingError: Exception) {
+                    // OpenPanel 追踪失败不影响主要功能
+                }
             }
         }
     }
