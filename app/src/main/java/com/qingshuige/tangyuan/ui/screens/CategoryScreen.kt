@@ -80,6 +80,20 @@ fun CategoryScreen(
         viewModel.loadCategoryDetail(categoryId)
     }
 
+    // 监听滚动，触发加载更多
+    LaunchedEffect(listState) {
+        androidx.compose.runtime.snapshotFlow { listState.layoutInfo }
+            .collect { layoutInfo ->
+                val totalItems = layoutInfo.totalItemsCount
+                val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                
+                if (totalItems > 0 && lastVisibleItemIndex >= totalItems - 3 && 
+                    uiState.hasMore && !uiState.isLoadingMore && !uiState.isLoading) {
+                    viewModel.loadMorePosts()
+                }
+            }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -135,7 +149,10 @@ fun CategoryScreen(
                         category = uiState.currentCategory!!,
                         stats = uiState.categoryStats,
                         posts = uiState.posts,
+                        totalPostsCount = uiState.totalPostsCount,
                         listState = listState,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMore = uiState.hasMore,
                         onPostClick = onPostClick,
                         onAuthorClick = onAuthorClick,
                         onImageClick = onImageClick,
@@ -157,7 +174,10 @@ private fun CategoryContent(
     category: com.qingshuige.tangyuan.model.Category,
     stats: com.qingshuige.tangyuan.viewmodel.CategoryStats?,
     posts: List<PostCard>,
+    totalPostsCount: Int,
     listState: LazyListState,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
     onPostClick: (Int) -> Unit,
     onAuthorClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit,
@@ -173,7 +193,8 @@ private fun CategoryContent(
         item {
             CategoryHeader(
                 category = category,
-                stats = stats
+                stats = stats,
+                totalPostsCount = totalPostsCount
             )
         }
 
@@ -198,9 +219,46 @@ private fun CategoryContent(
                 sharedElementPrefix = "category_post_${postCard.postId}"
             )
         }
+        
+        // 加载更多
+        if (isLoadingMore) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
+        
+        // 没有更多
+        if (!hasMore && posts.isNotEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "已经到底了",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = LiteraryFontFamily,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
 
         // 空状态
-        if (posts.isEmpty()) {
+        if (posts.isEmpty() && !isLoadingMore) {
             item {
                 Box(
                     modifier = Modifier
@@ -226,7 +284,8 @@ private fun CategoryContent(
 @Composable
 private fun CategoryHeader(
     category: com.qingshuige.tangyuan.model.Category,
-    stats: com.qingshuige.tangyuan.viewmodel.CategoryStats?
+    stats: com.qingshuige.tangyuan.viewmodel.CategoryStats?,
+    totalPostsCount: Int
 ) {
     Column(
         modifier = Modifier
@@ -300,7 +359,7 @@ private fun CategoryHeader(
 
         // 帖子列表标题
         Text(
-            text = "相关帖子",
+            text = "相关帖子 ($totalPostsCount)",
             style = MaterialTheme.typography.titleMedium,
             fontFamily = LiteraryFontFamily,
             fontWeight = FontWeight.SemiBold,

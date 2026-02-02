@@ -46,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.qingshuige.tangyuan.BuildConfig
 import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.ui.components.AuroraBackground
 import com.qingshuige.tangyuan.ui.components.GlobalMessageHost
@@ -169,7 +170,7 @@ fun AboutScreen(
                     )
                 )
                 Text(
-                    text = "Version 1.0.0", // Placeholder
+                    text = "Version ${BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -78,6 +78,7 @@ enum class PageLevel {
 fun TangyuanTopBar(
     currentScreen: Screen,
     pageLevel: PageLevel,
+    isLoggedIn: Boolean = false,
     avatarUrl: String? = null,
     onBackClick: (() -> Unit)? = null,
     onAvatarClick: (() -> Unit)? = null,
@@ -107,9 +108,6 @@ fun TangyuanTopBar(
                     }
                     // 一级页面且不是我的页面显示头像或应用图标
                     pageLevel == PageLevel.PRIMARY -> {
-                        val tokenManager = TokenManager()
-                        val isLoggedIn = tokenManager.token != null
-                        
                         IconButton(
                             onClick = { onAvatarClick?.invoke() },
                             modifier = Modifier.size(40.dp)

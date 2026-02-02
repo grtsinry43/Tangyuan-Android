@@ -1,5 +1,7 @@
 package com.qingshuige.tangyuan.ui.screens
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -69,8 +71,9 @@ enum class AuthMode {
 @Composable
 fun LoginScreen(
     navController: NavController,
-    userViewModel: UserViewModel = hiltViewModel()
 ) {
+    val activity = LocalActivity.current as ComponentActivity
+    val userViewModel: UserViewModel = hiltViewModel(viewModelStoreOwner = activity)
     var authMode by remember { mutableStateOf(AuthMode.LOGIN) }
     var phoneNumber by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

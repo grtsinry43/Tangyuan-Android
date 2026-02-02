@@ -14,6 +14,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.awaitResponse
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,6 +22,24 @@ import javax.inject.Singleton
 class PostRepository @Inject constructor(
     private val apiInterface: ApiInterface
 ) {
+    
+    // 内存缓存：postId -> PostCard
+    // 用于在页面跳转时立即提供初始数据，优化共享元素动画体验
+    private val postCardCache = ConcurrentHashMap<Int, PostCard>()
+    
+    /**
+     * 获取缓存的PostCard
+     */
+    fun getCachedPostCard(postId: Int): PostCard? {
+        return postCardCache[postId]
+    }
+    
+    /**
+     * 更新缓存
+     */
+    private fun cachePostCard(postCard: PostCard) {
+        postCardCache[postCard.postId] = postCard
+    }
     
     fun getPostMetadata(postId: Int): Flow<PostMetadata> = flow {
         val response = apiInterface.getPostMetadata(postId).awaitResponse()
@@ -140,7 +159,11 @@ class PostRepository @Inject constructor(
                 }.awaitAll()
             }
             
-            emit(postCards.filter { it.isVisible }) // 只返回可见的文章
+            // 缓存所有获取到的PostCard
+            val visibleCards = postCards.filter { it.isVisible }
+            visibleCards.forEach { cachePostCard(it) }
+            
+            emit(visibleCards) // 只返回可见的文章
             
         } catch (e: Exception) {
             throw Exception("Failed to get recommended post cards: ${e.message}")
@@ -151,6 +174,11 @@ class PostRepository @Inject constructor(
      * 获取单个文章的完整卡片数据
      */
     fun getPostCard(postId: Int): Flow<PostCard> = flow {
+        // 首先尝试从缓存中获取
+        getCachedPostCard(postId)?.let { 
+            emit(it) 
+        }
+
         try {
             coroutineScope {
                 // 并行获取所有数据
@@ -181,7 +209,12 @@ class PostRepository @Inject constructor(
                 val user = userDeferred.await()
                 val category = categoryDeferred.await()
                 
-                emit(metadata.toPostCard(user, category, body))
+                val postCard = metadata.toPostCard(user, category, body)
+                
+                // 更新缓存
+                cachePostCard(postCard)
+                
+                emit(postCard)
             }
         } catch (e: Exception) {
             throw Exception("Failed to get post card: ${e.message}")
@@ -195,6 +228,33 @@ class PostRepository @Inject constructor(
                 ?: emit(emptyList())
         } else {
             throw Exception("Failed to get posts by category: ${response.message()}")
+        }
+    }
+
+    /**
+     * 批量获取文章卡片（带缓存）
+     */
+    fun getPostCards(postIds: List<Int>): Flow<List<PostCard>> = flow {
+        try {
+            coroutineScope {
+                val postCards = postIds.map { postId ->
+                    async {
+                        try {
+                            // 复用 getPostCard 方法，利用其缓存和并行获取能力
+                            // 注意：getPostCard 返回的是 Flow，我们需要收集它
+                            var card: PostCard? = null
+                            getPostCard(postId).collect { card = it }
+                            card
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }.awaitAll().filterNotNull()
+                
+                emit(postCards)
+            }
+        } catch (e: Exception) {
+            emit(emptyList()) // 发生错误时返回空列表，避免崩溃
         }
     }
 
@@ -260,8 +320,12 @@ class PostRepository @Inject constructor(
                     }
                 }.awaitAll()
             }
+            
+            // 缓存所有获取到的PostCard
+            val visibleCards = postCards.filter { it.isVisible }
+            visibleCards.forEach { cachePostCard(it) }
 
-            emit(postCards.filter { it.isVisible }) // 只返回可见的文章
+            emit(visibleCards) // 只返回可见的文章
 
         } catch (e: Exception) {
             throw Exception("Failed to get category post cards: ${e.message}")

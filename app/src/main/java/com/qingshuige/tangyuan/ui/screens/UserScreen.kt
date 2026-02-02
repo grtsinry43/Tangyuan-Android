@@ -1,5 +1,7 @@
 package com.qingshuige.tangyuan.ui.screens
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -85,10 +87,11 @@ fun UserScreen(
     onSettings: () -> Unit = {},
     onAbout: () -> Unit = {},
     onDesignSystem: () -> Unit = {},
-    userViewModel: UserViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: androidx.compose.animation.AnimatedContentScope? = null
 ) {
+    val activity = LocalActivity.current as ComponentActivity
+    val userViewModel: UserViewModel = hiltViewModel(viewModelStoreOwner = activity)
     val loginState by userViewModel.loginState.collectAsState()
     val userUiState by userViewModel.userUiState.collectAsState()
 

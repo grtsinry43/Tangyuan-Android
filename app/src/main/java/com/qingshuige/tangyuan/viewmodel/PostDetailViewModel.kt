@@ -10,6 +10,7 @@ import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.PostDetailState
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostDetailRepository
+import com.qingshuige.tangyuan.repository.PostRepository
 import com.qingshuige.tangyuan.utils.ImageSaveUtils
 import com.qingshuige.tangyuan.utils.UIUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PostDetailViewModel @Inject constructor(
     private val postDetailRepository: PostDetailRepository,
+    private val postRepository: PostRepository, // Inject PostRepository for cache access
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
@@ -43,12 +45,24 @@ class PostDetailViewModel @Inject constructor(
         currentPostId = postId
         currentUserId = tokenManager.getUserIdFromToken() ?: 0
         
+        // 尝试从缓存获取初始数据，立即渲染 UI 以支持共享元素动画
+        val cachedPost = postRepository.getCachedPostCard(postId)
+        if (cachedPost != null) {
+            _state.value = _state.value.copy(
+                postCard = cachedPost,
+                isLoading = false // 有缓存数据就不显示全屏 Loading
+            )
+        }
+        
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            // 如果没有缓存，才显示 Loading
+            if (cachedPost == null) {
+                _state.value = _state.value.copy(isLoading = true, error = null)
+            }
             
             try {
                 // 先加载帖子详情，立即更新UI
-                postDetailRepository.getPostCard(postId)
+                postRepository.getPostCard(postId) // Use PostRepository to hit cache/network unified path
                     .catch { e ->
                         val friendlyMessage = when {
                             e.message?.contains("404", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"

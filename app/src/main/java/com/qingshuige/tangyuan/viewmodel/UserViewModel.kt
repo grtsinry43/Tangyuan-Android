@@ -1,5 +1,6 @@
 package com.qingshuige.tangyuan.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.qingshuige.tangyuan.model.CreateUserDto
@@ -121,12 +122,14 @@ class UserViewModel @Inject constructor(
                 }
                 .collect { user ->
                     println("DEBUG: 获取到用户信息: ${user.nickName}, 头像: ${user.avatarGuid}")
-                    // 更新userUiState
+                    // 更新 userUiState
                     _userUiState.value = _userUiState.value.copy(
                         currentUser = user
                     )
-                    // 同时更新loginState中的用户信息
-                    _loginState.value = _loginState.value.copy(user = user)
+                    // 同时更新 loginState 中的用户信息
+                    _loginState.value = _loginState.value.copy(
+                        user = user
+                    )
                 }
         } else {
             println("DEBUG: 无法从token中解析用户ID")
@@ -165,6 +168,9 @@ class UserViewModel @Inject constructor(
                             isLoading = false,
                             isLoggedIn = true,
                         )
+                        Log.d("login", "login:")
+                        Log.d("loginState", loginState.value.toString())
+                        Log.d("userUiState", userUiState.value.toString())
                     } else {
                         println("DEBUG: 手动登录失败，未获取到token")
                         _loginState.value = _loginState.value.copy(
@@ -262,6 +268,10 @@ class UserViewModel @Inject constructor(
         
         _loginState.value = LoginState()
         _userUiState.value = UserUiState()
+
+        Log.d("logout", "logout:")
+        Log.d("loginState", loginState.value.toString())
+        Log.d("userUiState", userUiState.value.toString())
     }
 
     fun clearError() {

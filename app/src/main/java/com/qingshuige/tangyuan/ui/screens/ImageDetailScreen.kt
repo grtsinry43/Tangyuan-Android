@@ -519,7 +519,7 @@ private fun PostAuthorInfo(
                     if (sharedTransitionScope != null && animatedContentScope != null) {
                         with(sharedTransitionScope) {
                             mod.sharedElement(
-                                rememberSharedContentState(key = "user_avatar_${postCard.authorId}"),
+                                rememberSharedContentState(key = "post_avatar_${postCard.postId}"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
                                     tween(durationMillis = 400, easing = FastOutSlowInEasing)
@@ -542,7 +542,7 @@ private fun PostAuthorInfo(
                 modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
                     with(sharedTransitionScope) {
                         Modifier.sharedElement(
-                            rememberSharedContentState(key = "user_name_${postCard.authorId}"),
+                            rememberSharedContentState(key = "post_name_${postCard.postId}"),
                             animatedVisibilityScope = animatedContentScope,
                             boundsTransform = { _, _ ->
                                 tween(durationMillis = 400, easing = FastOutSlowInEasing)

@@ -64,7 +64,7 @@ fun Modifier.shimmerEffect(): Modifier = composed {
         brush = Brush.linearGradient(
             colors = listOf(
                 Color(0xFFB0B0B0),
-                Color(0xFFF0F0F0),
+                Color(0xFFCECECE),
                 Color(0xFFB0B0B0),
             ),
             start = Offset(startOffsetX, 0f),
@@ -164,8 +164,8 @@ fun PostCardItem(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 4.dp
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
         )
     ) {
         Column(
@@ -221,14 +221,14 @@ fun PostCardItem(
 
             Spacer(modifier = Modifier.height(16.dp))
             
-            // 交互按钮栏
-            PostCardActions(
-                postCard = postCard,
-                onLikeClick = onLikeClick,
-                onCommentClick = onCommentClick,
-                onShareClick = onShareClick,
-                onBookmarkClick = onBookmarkClick
-            )
+//            // 交互按钮栏
+//            PostCardActions(
+//                postCard = postCard,
+//                onLikeClick = onLikeClick,
+//                onCommentClick = onCommentClick,
+//                onShareClick = onShareClick,
+//                onBookmarkClick = onBookmarkClick
+//            )
         }
     }
 }
@@ -260,7 +260,7 @@ private fun PostCardHeader(
                     if (sharedTransitionScope != null && animatedContentScope != null) {
                         with(sharedTransitionScope) {
                             mod.sharedElement(
-                                rememberSharedContentState(key = "${sharedElementPrefix}_user_avatar_${postCard.authorId}"),
+                                rememberSharedContentState(key = "post_avatar_${postCard.postId}"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
                                     tween(durationMillis = 400, easing = FastOutSlowInEasing)
@@ -292,7 +292,7 @@ private fun PostCardHeader(
                 modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
                     with(sharedTransitionScope) {
                         Modifier.sharedElement(
-                            rememberSharedContentState(key = "${sharedElementPrefix}_user_name_${postCard.authorId}"),
+                            rememberSharedContentState(key = "post_name_${postCard.postId}"),
                             animatedVisibilityScope = animatedContentScope,
                             boundsTransform = { _, _ ->
                                 tween(durationMillis = 400, easing = FastOutSlowInEasing)
@@ -398,7 +398,6 @@ private fun PostCardImages(
                         modifier = Modifier
                             .weight(1f)
                             .height(120.dp)
-                            .clip(MaterialTheme.shapes.medium)
                             .let { mod ->
                                 if (sharedTransitionScope != null && animatedContentScope != null) {
                                     with(sharedTransitionScope) {
@@ -411,7 +410,8 @@ private fun PostCardImages(
                                         )
                                     }
                                 } else mod
-                            },
+                            }
+                            .clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop,
                         onClick = { onImageClick(postId, index) }
                     )
@@ -431,7 +431,6 @@ private fun PostCardImages(
                         modifier = Modifier
                             .weight(1f)
                             .height(100.dp)
-                            .clip(MaterialTheme.shapes.medium)
                             .let { mod ->
                                 if (sharedTransitionScope != null && animatedContentScope != null) {
                                     with(sharedTransitionScope) {
@@ -444,7 +443,8 @@ private fun PostCardImages(
                                         )
                                     }
                                 } else mod
-                            },
+                            }
+                            .clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop,
                         onClick = { onImageClick(postId, index) }
                     )

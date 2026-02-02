@@ -58,7 +58,7 @@ fun CommentItem(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+//        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
@@ -262,14 +262,14 @@ private fun CommentActions(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 点赞按钮
-            CommentActionButton(
-                icon = if (comment.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                count = comment.likeCount,
-                isActive = comment.isLiked,
-                activeColor = MaterialTheme.colorScheme.error,
-                onClick = { /* TODO: 实现点赞 */ }
-            )
+//            // 点赞按钮
+//            CommentActionButton(
+//                icon = if (comment.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+//                count = comment.likeCount,
+//                isActive = comment.isLiked,
+//                activeColor = MaterialTheme.colorScheme.error,
+//                onClick = { /* TODO: 实现点赞 */ }
+//            )
             
             // 回复按钮
             CommentActionButton(
@@ -466,13 +466,13 @@ private fun ReplyItem(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CommentActionButton(
-                icon = if (reply.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                count = reply.likeCount,
-                isActive = reply.isLiked,
-                activeColor = MaterialTheme.colorScheme.error,
-                onClick = { /* TODO: 实现点赞 */ }
-            )
+//            CommentActionButton(
+//                icon = if (reply.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+//                count = reply.likeCount,
+//                isActive = reply.isLiked,
+//                activeColor = MaterialTheme.colorScheme.error,
+//                onClick = { /* TODO: 实现点赞 */ }
+//            )
             
             CommentActionButton(
                 icon = Icons.Outlined.Reply,
@@ -557,7 +557,7 @@ fun CommentInputBar(
                             )
                         )
                     },
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(5.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)

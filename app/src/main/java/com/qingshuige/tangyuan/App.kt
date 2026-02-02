@@ -1,6 +1,9 @@
 package com.qingshuige.tangyuan
 
 import android.annotation.SuppressLint
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Box
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
@@ -94,7 +98,41 @@ fun App(
                 navController = navController,
                 startDestination = "main"
             ) {
-                composable("main") {
+                composable(
+                    route = "main",
+                    enterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 200,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
                     MainFlow(
                         onLoginClick = { navController.navigate(Screen.Login.route) },
                         onPostClick = { postId ->
@@ -746,9 +784,10 @@ fun MainFlow(
     onSearchClick: () -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
-    userViewModel: UserViewModel = hiltViewModel(),
     postViewModel: PostViewModel = hiltViewModel()
 ) {
+    val activity = LocalActivity.current as ComponentActivity
+    val userViewModel: UserViewModel = hiltViewModel(viewModelStoreOwner = activity)
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -773,14 +812,20 @@ fun MainFlow(
         }
     }
 
+    val isLoggedIn = loginState.isLoggedIn
+
     // 获取头像URL - 当用户状态变化时重新计算
-    val avatarUrl = remember(loginState.user, userUiState.currentUser) {
+    val avatarUrl = remember(loginState.isLoggedIn, loginState.user, userUiState.currentUser) {
         userViewModel.getCurrentUserAvatarUrl()
     }
 
     // 头像点击处理逻辑
     val onAvatarClick = {
-        if (userViewModel.isLoggedIn()) {
+        Log.d("onAvatarClick", "Clicked avatar")
+        Log.d("loginState", loginState.toString())
+        Log.d("userUiState", userUiState.toString())
+        Log.d("avatarUrl", avatarUrl.toString())
+        if (isLoggedIn) {
             // 已登录，跳转到"我的"页面
             mainNavController.navigate(Screen.User.route) {
                 popUpTo(mainNavController.graph.findStartDestination().id) {
@@ -804,6 +849,7 @@ fun MainFlow(
         topBar = {
             TangyuanTopBar(
                 currentScreen = currentScreen,
+                isLoggedIn = isLoggedIn,
                 avatarUrl = avatarUrl,
                 pageLevel = PageLevel.PRIMARY,
                 onAvatarClick = onAvatarClick,
@@ -837,110 +883,110 @@ fun MainFlow(
                     .fillMaxSize()
                     .haze(state = hazeState),
                 enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { it / 2 },
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
+                    slideInHorizontally(
+                        initialOffsetX = { it / 2 },
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    ) + fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
                     )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { -it / 2 },
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    ) + fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
                     )
-                )
-            },
-            exitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { -it / 2 },
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { -it / 2 },
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    ) + fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
                     )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it / 2 },
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
+                    ) + fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = QuickEasing
+                        )
                     )
-                )
-            },
-            popEnterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { -it / 2 },
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
+                }
+            ) {
+                composable(Screen.Talk.route) {
+                    TalkScreen(
+                        onPostClick = onPostClick,
+                        onAuthorClick = onAuthorClick,
+                        onImageClick = onImageClick,
+                        onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope
                     )
-                ) + fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
+                }
+                composable(Screen.Topic.route) {
+                    TopicScreen(
+                        onPostClick = onPostClick,
+                        onAuthorClick = onAuthorClick,
+                        onImageClick = onImageClick,
+                        onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope
                     )
-                )
-            },
-            popExitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { it / 2 },
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
-                    )
-                ) + fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 200,
-                        easing = QuickEasing
-                    )
-                )
-            }
-        ) {
-            composable(Screen.Talk.route) {
-                TalkScreen(
-                    onPostClick = onPostClick,
-                    onAuthorClick = onAuthorClick,
-                    onImageClick = onImageClick,
-                    onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope
-                )
-            }
-            composable(Screen.Topic.route) {
-                TopicScreen(
-                    onPostClick = onPostClick,
-                    onAuthorClick = onAuthorClick,
-                    onImageClick = onImageClick,
-                    onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope
-                )
-            }
-            composable(Screen.Message.route) {
-                NotificationScreen(
-                    onNotificationClick = { sourceId, sourceType ->
-                        // 根据通知类型跳转到相应页面
-                        when (sourceType) {
-                            "post" -> onPostClick(sourceId)
-                            "comment" -> onPostClick(sourceId) // 评论通知跳转到帖子详情
-                            "user" -> onAuthorClick(sourceId) // 关注通知跳转到用户详情
-                            else -> { /* 忽略未知类型 */
+                }
+                composable(Screen.Message.route) {
+                    NotificationScreen(
+                        onNotificationClick = { sourceId, sourceType ->
+                            // 根据通知类型跳转到相应页面
+                            when (sourceType) {
+                                "post" -> onPostClick(sourceId)
+                                "comment" -> onPostClick(sourceId) // 评论通知跳转到帖子详情
+                                "user" -> onAuthorClick(sourceId) // 关注通知跳转到用户详情
+                                else -> { /* 忽略未知类型 */
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                }
+                composable(Screen.User.route) {
+                    UserScreen(
+                        onEditProfile = onEditProfileClick,
+                        onPostManagement = onPostManagementClick,
+                        onSettings = {
+                            // TODO: 导航到设置页面
+                        },
+                        onAbout = onAboutClick,
+                        onDesignSystem = onDesignSystemClick,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope
+                    )
+                }
             }
-            composable(Screen.User.route) {
-                UserScreen(
-                    onEditProfile = onEditProfileClick,
-                    onPostManagement = onPostManagementClick,
-                    onSettings = {
-                        // TODO: 导航到设置页面
-                    },
-                    onAbout = onAboutClick,
-                    onDesignSystem = onDesignSystemClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope
-                )
-            }
-        }
         }
     }
 }

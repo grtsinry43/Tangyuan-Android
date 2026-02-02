@@ -1,5 +1,6 @@
 package com.qingshuige.tangyuan.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.qingshuige.tangyuan.analytics.OpenPanelClient
@@ -47,6 +48,8 @@ class TalkViewModel @Inject constructor(
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 }
+
+                Log.d("exceptedIds",_loadedPostIds.toList().toString())
                 
                 postRepository.getRecommendedPostCards(
                     sectionId = defaultSectionId,

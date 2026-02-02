@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.qingshuige.tangyuan.model.PostMetadata
+import kotlin.math.min
+
 data class CategoryStats(
     val postCount: Int = 0,
     val weeklyNewCount: Int = 0,
@@ -23,11 +26,14 @@ data class CategoryStats(
 
 data class CategoryUiState(
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val categories: List<Category> = emptyList(),
     val currentCategory: Category? = null,
     val categoryStats: CategoryStats? = null,
     val posts: List<PostCard> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val hasMore: Boolean = false,
+    val totalPostsCount: Int = 0
 )
 
 @HiltViewModel
@@ -41,6 +47,11 @@ class CategoryViewModel @Inject constructor(
     
     private val _categoryStatsMap = MutableStateFlow<Map<Int, CategoryStats>>(emptyMap())
     val categoryStatsMap: StateFlow<Map<Int, CategoryStats>> = _categoryStatsMap.asStateFlow()
+
+    // 分页相关
+    private var allPostMetadatas: List<PostMetadata> = emptyList()
+    private var currentPage = 0
+    private val pageSize = 10
     
     fun getAllCategories() {
         viewModelScope.launch {
@@ -128,16 +139,6 @@ class CategoryViewModel @Inject constructor(
             _categoryUiState.value = _categoryUiState.value.copy(isLoading = true, error = null)
             try {
                 // TODO: Call repository to get all categories
-                // val categories = categoryRepository.getAllCategories()
-                // _categoryUiState.value = _categoryUiState.value.copy(
-                //     isLoading = false,
-                //     categories = categories
-                // )
-                
-                // Load stats for each category
-                // categories.forEach { category ->
-                //     getCategoryStats(category.categoryId)
-                // }
             } catch (e: Exception) {
                 _categoryUiState.value = _categoryUiState.value.copy(
                     isLoading = false,
@@ -159,8 +160,12 @@ class CategoryViewModel @Inject constructor(
         _categoryUiState.value = _categoryUiState.value.copy(
             currentCategory = null,
             categoryStats = null,
-            posts = emptyList()
+            posts = emptyList(),
+            hasMore = false,
+            isLoadingMore = false
         )
+        allPostMetadatas = emptyList()
+        currentPage = 0
     }
 
     fun loadCategoryDetail(categoryId: Int) {
@@ -195,14 +200,24 @@ class CategoryViewModel @Inject constructor(
 
                 _categoryUiState.value = _categoryUiState.value.copy(categoryStats = stats)
 
-                // Load posts using PostRepository to get complete PostCard objects
-                postRepository.getCategoryPostCards(categoryId)
+                // Load posts (Metadata first)
+                postRepository.getPostsByCategory(categoryId)
                     .catch { throw it }
                     .collect { posts ->
+                        allPostMetadatas = posts.sortedByDescending { it.postDateTime }
+                        currentPage = 0
                         _categoryUiState.value = _categoryUiState.value.copy(
+                            posts = emptyList(),
                             isLoading = false,
-                            posts = posts
+                            totalPostsCount = allPostMetadatas.size
                         )
+                        
+                        if (allPostMetadatas.isNotEmpty()) {
+                            _categoryUiState.value = _categoryUiState.value.copy(hasMore = true)
+                            loadMorePosts() // Load first page
+                        } else {
+                            _categoryUiState.value = _categoryUiState.value.copy(hasMore = false)
+                        }
                     }
             } catch (e: Exception) {
                 _categoryUiState.value = _categoryUiState.value.copy(
@@ -210,6 +225,38 @@ class CategoryViewModel @Inject constructor(
                     error = e.message
                 )
             }
+        }
+    }
+    
+    fun loadMorePosts() {
+        if (_categoryUiState.value.isLoadingMore) return
+        if (currentPage * pageSize >= allPostMetadatas.size) return
+
+        viewModelScope.launch {
+            _categoryUiState.value = _categoryUiState.value.copy(isLoadingMore = true)
+            
+            val startIndex = currentPage * pageSize
+            val endIndex = min(startIndex + pageSize, allPostMetadatas.size)
+            val chunk = allPostMetadatas.subList(startIndex, endIndex)
+            val chunkIds = chunk.map { it.postId }
+
+            postRepository.getPostCards(chunkIds)
+                .catch { 
+                     // Ignore chunk error
+                }
+                .collect { newCards ->
+                    val currentList = _categoryUiState.value.posts.toMutableList()
+                    currentList.addAll(newCards)
+                    
+                    currentPage++
+                    val hasMore = currentPage * pageSize < allPostMetadatas.size
+                    
+                    _categoryUiState.value = _categoryUiState.value.copy(
+                        posts = currentList,
+                        isLoadingMore = false,
+                        hasMore = hasMore
+                    )
+                }
         }
     }
 }

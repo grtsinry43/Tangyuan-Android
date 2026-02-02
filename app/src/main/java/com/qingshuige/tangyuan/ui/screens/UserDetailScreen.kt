@@ -57,8 +57,25 @@ fun UserDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isPostsLoading by viewModel.isPostsLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val hasMorePosts by viewModel.hasMorePosts.collectAsState()
+    val totalPostsCount by viewModel.totalPostsCount.collectAsState()
 
     var isRefreshing by remember { mutableStateOf(false) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    // 监听滚动，触发加载更多
+    LaunchedEffect(listState) {
+        androidx.compose.runtime.snapshotFlow { listState.layoutInfo }
+            .collect { layoutInfo ->
+                val totalItems = layoutInfo.totalItemsCount
+                val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                
+                if (totalItems > 0 && lastVisibleItemIndex >= totalItems - 3 && 
+                    hasMorePosts && !isPostsLoading) {
+                    viewModel.loadMorePosts()
+                }
+            }
+    }
 
     // 延迟初始加载以避免阻塞共享元素动画
     LaunchedEffect(userId) {
@@ -96,6 +113,7 @@ fun UserDetailScreen(
                 .padding(paddingValues)
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
@@ -128,7 +146,7 @@ fun UserDetailScreen(
                 // 用户帖子信息流
                 user?.let { userInfo ->
                     item {
-                        PostsSectionHeader(postsCount = userPosts.size)
+                        PostsSectionHeader(postsCount = totalPostsCount)
                     }
 
                     if (isPostsLoading && userPosts.isEmpty()) {
@@ -164,10 +182,25 @@ fun UserDetailScreen(
                             )
                         }
                         
-                        // 底部提示文字
+                        // 底部提示文字或加载动画
                         if (userPosts.isNotEmpty()) {
-                            item {
-                                BottomIndicator()
+                            if (isPostsLoading) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            } else if (!hasMorePosts) {
+                                item {
+                                    BottomIndicator()
+                                }
                             }
                         }
                     }

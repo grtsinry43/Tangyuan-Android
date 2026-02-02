@@ -473,7 +473,7 @@ private fun PostDetailCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
@@ -584,19 +584,18 @@ private fun PostDetailHeader(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.clickable { onAuthorClick(postCard.authorId) }
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data("${TangyuanApplication.instance.bizDomain}images/${postCard.authorAvatar}.jpg")
-                .crossfade(true)
-                .build(),
-            contentDescription = "${postCard.authorName}的头像",
-            modifier = Modifier
+                    AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data("${TangyuanApplication.instance.bizDomain}images/${postCard.authorAvatar}.jpg")
+                        .crossfade(false)
+                        .build(),
+                    contentDescription = "${postCard.authorName}的头像",            modifier = Modifier
                 .size(48.dp)
                 .let { mod ->
                     if (sharedTransitionScope != null && animatedContentScope != null) {
                         with(sharedTransitionScope) {
                             mod.sharedElement(
-                                rememberSharedContentState(key = "user_avatar_${postCard.authorId}"),
+                                rememberSharedContentState(key = "post_avatar_${postCard.postId}"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = { _, _ ->
                                     tween(durationMillis = 400, easing = FastOutSlowInEasing)
@@ -621,7 +620,7 @@ private fun PostDetailHeader(
                 modifier = if (sharedTransitionScope != null && animatedContentScope != null) {
                     with(sharedTransitionScope) {
                         Modifier.sharedElement(
-                            rememberSharedContentState(key = "user_name_${postCard.authorId}"),
+                            rememberSharedContentState(key = "post_name_${postCard.postId}"),
                             animatedVisibilityScope = animatedContentScope,
                             boundsTransform = { _, _ ->
                                 tween(durationMillis = 400, easing = FastOutSlowInEasing)
@@ -662,12 +661,10 @@ private fun PostDetailImages(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[0]}.jpg")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "文章图片",
-                modifier = Modifier
+                                            .crossfade(false)
+                                            .build(),
+                                        contentDescription = "文章图片",                modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
                     .clickable { onImageClick(postId, 0) }
                     .let { mod ->
                         if (sharedTransitionScope != null && animatedContentScope != null) {
@@ -681,7 +678,8 @@ private fun PostDetailImages(
                                 )
                             }
                         } else mod
-                    },
+                    }
+                    .clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.FillWidth
             )
         }
@@ -694,13 +692,11 @@ private fun PostDetailImages(
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[index]}.jpg")
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "文章图片",
-                        modifier = Modifier
+                                                    .crossfade(false)
+                                                    .build(),
+                                                contentDescription = "文章图片",                        modifier = Modifier
                             .width(200.dp)
                             .height(150.dp)
-                            .clip(MaterialTheme.shapes.medium)
                             .clickable { onImageClick(postId, index) }
                             .let { mod ->
                                 if (sharedTransitionScope != null && animatedContentScope != null) {
@@ -714,7 +710,8 @@ private fun PostDetailImages(
                                         )
                                     }
                                 } else mod
-                            },
+                            }
+                            .clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop
                     )
                 }
