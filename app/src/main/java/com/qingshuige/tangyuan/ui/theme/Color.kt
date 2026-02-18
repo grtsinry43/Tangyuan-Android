@@ -144,6 +144,65 @@ object TangyuanGradients {
     )
 }
 
+object TangyuanFestivalColors {
+    // 春节主题（中国红 + 金色）
+    val PrimaryLight = Color(0xFFC1121F)
+    val OnPrimaryLight = Color(0xFFFFFFFF)
+    val PrimaryContainerLight = Color(0xFFFFE5E8)
+    val OnPrimaryContainerLight = Color(0xFF410004)
+
+    val SecondaryLight = Color(0xFFC98200)
+    val OnSecondaryLight = Color(0xFFFFFFFF)
+    val SecondaryContainerLight = Color(0xFFFFE7C2)
+    val OnSecondaryContainerLight = Color(0xFF2A1700)
+
+    val TertiaryLight = Color(0xFF8C1D40)
+    val OnTertiaryLight = Color(0xFFFFFFFF)
+    val TertiaryContainerLight = Color(0xFFFFD9E2)
+    val OnTertiaryContainerLight = Color(0xFF370015)
+
+    val BackgroundLight = Color(0xFFFFF8F2)
+    val OnBackgroundLight = Color(0xFF2D1B14)
+    val SurfaceLight = Color(0xFFFFFBF8)
+    val OnSurfaceLight = Color(0xFF2D1B14)
+    val SurfaceVariantLight = Color(0xFFF7E6DE)
+    val OnSurfaceVariantLight = Color(0xFF6C4E45)
+    val OutlineLight = Color(0xFFD9B9AB)
+
+    val ErrorLight = Color(0xFFBA1A1A)
+    val OnErrorLight = Color(0xFFFFFFFF)
+    val ErrorContainerLight = Color(0xFFFFDAD6)
+    val OnErrorContainerLight = Color(0xFF410002)
+
+    val PrimaryDark = Color(0xFFFFB3BA)
+    val OnPrimaryDark = Color(0xFF68000B)
+    val PrimaryContainerDark = Color(0xFF930015)
+    val OnPrimaryContainerDark = Color(0xFFFFDADF)
+
+    val SecondaryDark = Color(0xFFFFD08A)
+    val OnSecondaryDark = Color(0xFF432C00)
+    val SecondaryContainerDark = Color(0xFF614000)
+    val OnSecondaryContainerDark = Color(0xFFFFE7C2)
+
+    val TertiaryDark = Color(0xFFFFB0C8)
+    val OnTertiaryDark = Color(0xFF54172D)
+    val TertiaryContainerDark = Color(0xFF702A43)
+    val OnTertiaryContainerDark = Color(0xFFFFD9E2)
+
+    val BackgroundDark = Color(0xFF1E1110)
+    val OnBackgroundDark = Color(0xFFF4DED6)
+    val SurfaceDark = Color(0xFF241715)
+    val OnSurfaceDark = Color(0xFFF4DED6)
+    val SurfaceVariantDark = Color(0xFF503D37)
+    val OnSurfaceVariantDark = Color(0xFFD7C2BA)
+    val OutlineDark = Color(0xFF9F8C84)
+
+    val ErrorDark = Color(0xFFFFB4AB)
+    val OnErrorDark = Color(0xFF690005)
+    val ErrorContainerDark = Color(0xFF93000A)
+    val OnErrorContainerDark = Color(0xFFFFDAD6)
+}
+
 // 使用示例
 /*
 使用建议：

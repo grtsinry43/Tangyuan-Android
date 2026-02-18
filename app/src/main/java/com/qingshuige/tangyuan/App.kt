@@ -30,6 +30,7 @@ import com.qingshuige.tangyuan.navigation.Screen
 import com.qingshuige.tangyuan.ui.components.ModernConfirmDialog
 import com.qingshuige.tangyuan.ui.components.GlobalMessageHost
 import com.qingshuige.tangyuan.ui.components.PageLevel
+import com.qingshuige.tangyuan.ui.components.ThemeBackgroundOverlay
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.AboutScreen
@@ -43,10 +44,15 @@ import com.qingshuige.tangyuan.ui.screens.NotificationScreen
 import com.qingshuige.tangyuan.ui.screens.PostManagementScreen
 import com.qingshuige.tangyuan.ui.screens.SearchScreen
 import com.qingshuige.tangyuan.ui.screens.TalkScreen
+import com.qingshuige.tangyuan.ui.screens.ThemeSettingsScreen
 import com.qingshuige.tangyuan.ui.screens.LoginScreen
 import com.qingshuige.tangyuan.ui.screens.TopicScreen
 import com.qingshuige.tangyuan.ui.screens.UserDetailScreen
 import com.qingshuige.tangyuan.ui.screens.UserScreen
+import com.qingshuige.tangyuan.ui.theme.AppThemeMode
+import com.qingshuige.tangyuan.ui.theme.ThemeBackgroundLevel
+import com.qingshuige.tangyuan.ui.theme.ThemePolicy
+import com.qingshuige.tangyuan.utils.PrefsManager
 import com.qingshuige.tangyuan.viewmodel.DialogViewModel
 import com.qingshuige.tangyuan.viewmodel.GlobalDialogManager
 import com.qingshuige.tangyuan.viewmodel.GlobalMessageManager
@@ -153,6 +159,7 @@ fun App(
                             navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
                         },
                         onAboutClick = { navController.navigate(Screen.About.route) },
+                        onThemeSettingsClick = { navController.navigate(Screen.ThemeSettings.route) },
                         onCreatePostClick = { sectionId ->
                             navController.navigate(Screen.CreatePost.createRoute(sectionId))
                         },
@@ -511,6 +518,50 @@ fun App(
                 }
 
                 composable(
+                    route = Screen.ThemeSettings.route,
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickSpringEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { -it / 3 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = QuickEasing
+                            )
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(
+                                durationMillis = 250,
+                                easing = QuickEasing
+                            )
+                        )
+                    }
+                ) {
+                    ThemeSettingsScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
                     route = Screen.DesignSystem.route,
                     enterTransition = {
                         slideInHorizontally(
@@ -777,6 +828,7 @@ fun MainFlow(
     onAuthorClick: (Int) -> Unit = {},
     onCategoryClick: (Int) -> Unit = {},
     onAboutClick: () -> Unit,
+    onThemeSettingsClick: () -> Unit,
     onDesignSystemClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     onPostManagementClick: () -> Unit,
@@ -791,6 +843,18 @@ fun MainFlow(
     val mainNavController = rememberNavController()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val themeModeValue by PrefsManager.getStringFlow(
+        key = PrefsManager.Keys.APP_THEME_MODE,
+        defaultValue = AppThemeMode.DEFAULT.value
+    ).collectAsState(initial = AppThemeMode.DEFAULT.value)
+    val themeUserOverridden by PrefsManager.getBooleanFlow(
+        key = PrefsManager.Keys.APP_THEME_USER_OVERRIDDEN,
+        defaultValue = false
+    ).collectAsState(initial = false)
+    val effectiveThemeMode = ThemePolicy.resolveThemeMode(
+        savedMode = AppThemeMode.fromValue(themeModeValue),
+        userOverridden = themeUserOverridden
+    )
 
     val bottomBarScreens = listOf(Screen.Talk, Screen.Topic, Screen.Message, Screen.User)
     val currentScreen =
@@ -876,6 +940,11 @@ fun MainFlow(
         }
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
+            ThemeBackgroundOverlay(
+                themeMode = effectiveThemeMode,
+                level = ThemeBackgroundLevel.PRIMARY,
+                alpha = 0.07f
+            )
             NavHost(
                 navController = mainNavController,
                 startDestination = Screen.Talk.route,
@@ -977,9 +1046,7 @@ fun MainFlow(
                     UserScreen(
                         onEditProfile = onEditProfileClick,
                         onPostManagement = onPostManagementClick,
-                        onSettings = {
-                            // TODO: 导航到设置页面
-                        },
+                        onSettings = onThemeSettingsClick,
                         onAbout = onAboutClick,
                         onDesignSystem = onDesignSystemClick,
                         sharedTransitionScope = sharedTransitionScope,

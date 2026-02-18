@@ -3,6 +3,7 @@ package com.qingshuige.tangyuan.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.qingshuige.tangyuan.analytics.OpenPanelClient
@@ -159,7 +160,8 @@ class CreatePostViewModel @Inject constructor(
 
                 // 将 Uri 转换为 File
                 val file = uriToFile(context, uri)
-                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
                 // 上传图片
@@ -353,7 +355,12 @@ class CreatePostViewModel @Inject constructor(
      */
     private fun uriToFile(context: Context, uri: Uri): File {
         val contentResolver = context.contentResolver
-        val file = File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+        val mimeType = contentResolver.getType(uri)
+        val extension = MimeTypeMap.getSingleton()
+            .getExtensionFromMimeType(mimeType)
+            ?.takeIf { it.isNotBlank() }
+            ?: "jpg"
+        val file = File(context.cacheDir, "upload_${System.currentTimeMillis()}.$extension")
 
         try {
             contentResolver.openInputStream(uri)?.use { input ->

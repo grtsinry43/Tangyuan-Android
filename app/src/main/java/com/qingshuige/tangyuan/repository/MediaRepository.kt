@@ -18,8 +18,10 @@ class MediaRepository @Inject constructor(
         if (response.isSuccessful) {
             response.body()?.let { emit(it) } 
                 ?: throw Exception("Empty response body")
+        } else if (response.code() == 401){
+            throw Exception("请先登录后再操作")
         } else {
-            throw Exception("Failed to upload image: ${response.message()}")
+            throw Exception("Failed to upload image:${response.code()} ${response.message()}")
         }
     }
 }

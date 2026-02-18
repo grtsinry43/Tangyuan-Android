@@ -1,0 +1,27 @@
+{
+  "theme_id": "spring_festival",
+  "display_name": "春节主题",
+  "version": 1,
+  "description": "红金节庆风格",
+  "active_windows": [
+    {
+      "start": "2026-02-16",
+      "end": "2026-03-03",
+      "timezone": "Asia/Shanghai"
+    }
+  ],
+  "stickers": [
+    "stickers/openclipart-vectors-lampion-152693_1280.png"
+  ],
+  "backgrounds": [
+    "backgrounds/chenyang1912-PZWa0yCbJHQ-unsplash.jpg",
+    "backgrounds/sahil-pandita-bsDlcGg9Nh4-unsplash.jpg"
+  ],
+  "background_mapping": {
+    "primary_page": "backgrounds/chenyang1912-PZWa0yCbJHQ-unsplash.jpg",
+    "secondary_page": "backgrounds/sahil-pandita-bsDlcGg9Nh4-unsplash.jpg"
+  },
+  "sticker_mapping": {
+    "post_detail_top_right": "stickers/openclipart-vectors-lampion-152693_1280.png"
+  }
+}

@@ -1,9 +1,6 @@
 package com.qingshuige.tangyuan.ui.screens
 
-import android.Manifest
 import android.net.Uri
-import android.os.Build
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -59,53 +56,43 @@ fun CreatePostScreen(
     // 修改：使用枚举来管理活动的 BottomSheet
     var activeSheet by remember { mutableStateOf(BottomSheetType.NONE) }
 
-    // 图片选择器 - 使用 PickVisualMedia 更可靠
+    fun handleSelectedImage(uri: Uri) {
+        // 对 ACTION_OPEN_DOCUMENT 返回的 URI 尝试持久化读取权限；Photo Picker URI 会被忽略
+        try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (_: Exception) {
+            // 某些 URI/ROM 不支持持久化权限，直接使用临时读权限
+        }
+        viewModel.addImageAndUpload(context, uri)
+    }
+
+    // 优先使用 Photo Picker
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
-        uri?.let {
-            // 获取持久化权限
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    it,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (e: Exception) {
-                // 某些 URI 可能不支持持久化权限，继续处理
-            }
-
-            viewModel.addImageAndUpload(context, it)
-        }
+        uri?.let(::handleSelectedImage)
     }
 
-    // 权限请求 launcher (仅用于 Android 12 及以下)
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            imagePickerLauncher.launch(
-                androidx.activity.result.PickVisualMediaRequest(
-                    ActivityResultContracts.PickVisualMedia.ImageOnly
-                )
-            )
-        } else {
-            UIUtils.showError("需要存储权限才能选择图片")
-        }
+    // 兜底到“打开文件”(SAF OpenDocument)，覆盖部分 ROM 对 Photo Picker 的兼容问题
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let(::handleSelectedImage)
     }
 
     // 请求图片选择的函数
     val requestImagePicker: () -> Unit = {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ 使用 Photo Picker，不需要权限
-            imagePickerLauncher.launch(
-                androidx.activity.result.PickVisualMediaRequest(
-                    ActivityResultContracts.PickVisualMedia.ImageOnly
-                )
+        imagePickerLauncher.launch(
+            androidx.activity.result.PickVisualMediaRequest(
+                ActivityResultContracts.PickVisualMedia.ImageOnly
             )
-        } else {
-            // Android 12 及以下需要请求权限
-            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
+        )
+    }
+    val requestFilePicker: () -> Unit = {
+        openDocumentLauncher.launch(arrayOf("image/*"))
     }
 
     // 监听发布成功
@@ -263,6 +250,7 @@ fun CreatePostScreen(
                 uploadProgress = uiState.uploadProgress,
                 remainingSlots = uiState.remainingImageSlots,
                 onAddImage = requestImagePicker,
+                onPickFromFile = requestFilePicker,
                 onRemoveImage = { viewModel.removeImageAt(it) }
             )
 
@@ -513,6 +501,7 @@ private fun ImageSelector(
     uploadProgress: Map<String, Float>,
     remainingSlots: Int,
     onAddImage: () -> Unit,
+    onPickFromFile: () -> Unit,
     onRemoveImage: (Int) -> Unit
 ) {
     Column {
@@ -532,6 +521,13 @@ private fun ImageSelector(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+        TextButton(
+            onClick = onPickFromFile,
+            enabled = remainingSlots > 0,
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Text("图片权限遇到问题？在这里选择文件")
         }
         Spacer(modifier = Modifier.height(8.dp))
 

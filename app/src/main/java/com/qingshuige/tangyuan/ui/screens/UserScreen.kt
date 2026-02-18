@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Email
@@ -479,17 +480,17 @@ private fun MenuSection(
                 onClick = onPostManagement
             )
 
-//            HorizontalDivider(
-//                modifier = Modifier.padding(horizontal = 16.dp),
-//                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-//            )
-//
-//            MenuItem(
-//                icon = Icons.Default.Settings,
-//                title = "设置",
-//                subtitle = "个性化设置和隐私选项",
-//                onClick = onSettings
-//            )
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
+
+            MenuItem(
+                icon = Icons.Default.Palette,
+                title = "主题选择",
+                subtitle = "默认/春节等主题样式",
+                onClick = onSettings
+            )
 
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -554,17 +555,17 @@ private fun MenuSectionNotLogin(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-//            MenuItem(
-//                icon = Icons.Default.Settings,
-//                title = "设置",
-//                subtitle = "个性化设置和隐私选项",
-//                onClick = onSettings
-//            )
-//
-//            HorizontalDivider(
-//                modifier = Modifier.padding(horizontal = 16.dp),
-//                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-//            )
+            MenuItem(
+                icon = Icons.Default.Palette,
+                title = "主题选择",
+                subtitle = "默认/春节等主题样式",
+                onClick = onSettings
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
 
             MenuItem(
                 icon = Icons.Default.DesignServices,

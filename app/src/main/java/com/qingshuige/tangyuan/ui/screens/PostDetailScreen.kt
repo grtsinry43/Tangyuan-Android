@@ -38,9 +38,15 @@ import com.qingshuige.tangyuan.model.CommentCard
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.ui.components.CommentItem
 import com.qingshuige.tangyuan.ui.components.CommentInputBar
+import com.qingshuige.tangyuan.ui.components.ThemeBackgroundOverlay
+import com.qingshuige.tangyuan.ui.components.ThemeStickerOverlay
+import com.qingshuige.tangyuan.ui.theme.AppThemeMode
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
+import com.qingshuige.tangyuan.ui.theme.ThemeBackgroundLevel
+import com.qingshuige.tangyuan.ui.theme.ThemePolicy
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
+import com.qingshuige.tangyuan.utils.PrefsManager
 import com.qingshuige.tangyuan.utils.ShareCardGenerator
 import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.utils.withPanguSpacing
@@ -74,6 +80,18 @@ fun PostDetailScreen(
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val themeModeValue by PrefsManager.getStringFlow(
+        key = PrefsManager.Keys.APP_THEME_MODE,
+        defaultValue = AppThemeMode.DEFAULT.value
+    ).collectAsState(initial = AppThemeMode.DEFAULT.value)
+    val themeUserOverridden by PrefsManager.getBooleanFlow(
+        key = PrefsManager.Keys.APP_THEME_USER_OVERRIDDEN,
+        defaultValue = false
+    ).collectAsState(initial = false)
+    val effectiveThemeMode = ThemePolicy.resolveThemeMode(
+        savedMode = AppThemeMode.fromValue(themeModeValue),
+        userOverridden = themeUserOverridden
+    )
 
     var showSharePreview by remember { mutableStateOf(false) }
     var shareCardBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -132,43 +150,53 @@ fun PostDetailScreen(
             }
         }
     ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = viewModel::refreshPostDetail,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // 始终显示内容，确保共享元素有目标
-            PostDetailContent(
-                postCard = state.postCard,
-                comments = state.comments,
-                listState = listState,
-                isLoadingComments = state.isLoading && state.postCard != null,
-                isError = state.error != null && state.postCard == null,
-                errorMessage = state.error,
-                onAuthorClick = onAuthorClick,
-                onCategoryClick = onCategoryClick,
-                onImageClick = onImageClick,
-                onReplyToComment = viewModel::setReplyToComment,
-                onDeleteComment = { commentId ->
-                    UIUtils.showConfirmDialog(
-                        title = "删除评论",
-                        message = "确定要删除这条评论吗？此操作不可撤销。",
-                        confirmText = "删除",
-                        dismissText = "取消",
-                        onConfirm = {
-                            viewModel.deleteComment(commentId)
-                        }
-                    )
-                },
-                onRetry = {
-                    viewModel.clearError()
-                    viewModel.loadPostDetail(postId)
-                },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope
+            ThemeBackgroundOverlay(
+                themeMode = effectiveThemeMode,
+                level = ThemeBackgroundLevel.SECONDARY,
+                alpha = 0.06f
             )
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = viewModel::refreshPostDetail,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // 始终显示内容，确保共享元素有目标
+                PostDetailContent(
+                    postCard = state.postCard,
+                    comments = state.comments,
+                    listState = listState,
+                    isLoadingComments = state.isLoading && state.postCard != null,
+                    isError = state.error != null && state.postCard == null,
+                    errorMessage = state.error,
+                    onAuthorClick = onAuthorClick,
+                    onCategoryClick = onCategoryClick,
+                    onImageClick = onImageClick,
+                    onReplyToComment = viewModel::setReplyToComment,
+                    onDeleteComment = { commentId ->
+                        UIUtils.showConfirmDialog(
+                            title = "删除评论",
+                            message = "确定要删除这条评论吗？此操作不可撤销。",
+                            confirmText = "删除",
+                            dismissText = "取消",
+                            onConfirm = {
+                                viewModel.deleteComment(commentId)
+                            }
+                        )
+                    },
+                    onRetry = {
+                        viewModel.clearError()
+                        viewModel.loadPostDetail(postId)
+                    },
+                    themeMode = effectiveThemeMode,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
+                )
+            }
         }
     }
 
@@ -371,6 +399,7 @@ private fun  PostDetailContent(
     onReplyToComment: (CommentCard) -> Unit,
     onDeleteComment: (Int) -> Unit,
     onRetry: () -> Unit,
+    themeMode: AppThemeMode = AppThemeMode.DEFAULT,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
@@ -396,6 +425,7 @@ private fun  PostDetailContent(
                     onAuthorClick = onAuthorClick,
                     onImageClick = onImageClick,
                     onCategoryClick = onCategoryClick,
+                    themeMode = themeMode,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope
                 )
@@ -449,6 +479,7 @@ private fun PostDetailCard(
     onAuthorClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit,
     onCategoryClick: (Int) -> Unit = {},
+    themeMode: AppThemeMode = AppThemeMode.DEFAULT,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
@@ -475,11 +506,12 @@ private fun PostDetailCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp)
-        ) {
+            ) {
             // 作者信息
             PostDetailHeader(
                 postCard = postCard,
@@ -565,6 +597,16 @@ private fun PostDetailCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            }
+
+            ThemeStickerOverlay(
+                themeMode = themeMode,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 10.dp, end = 10.dp)
+                    .size(56.dp),
+                alpha = 0.14f
+            )
         }
     }
 }

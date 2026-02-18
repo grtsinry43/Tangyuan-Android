@@ -62,9 +62,62 @@ private val LightColorScheme = lightColorScheme(
     outline = TangyuanColors.OutlineLight,
 )
 
+private val SpringFestivalLightColorScheme = lightColorScheme(
+    primary = TangyuanFestivalColors.PrimaryLight,
+    secondary = TangyuanFestivalColors.SecondaryLight,
+    tertiary = TangyuanFestivalColors.TertiaryLight,
+    onPrimary = TangyuanFestivalColors.OnPrimaryLight,
+    onSecondary = TangyuanFestivalColors.OnSecondaryLight,
+    onTertiary = TangyuanFestivalColors.OnTertiaryLight,
+    primaryContainer = TangyuanFestivalColors.PrimaryContainerLight,
+    secondaryContainer = TangyuanFestivalColors.SecondaryContainerLight,
+    tertiaryContainer = TangyuanFestivalColors.TertiaryContainerLight,
+    onPrimaryContainer = TangyuanFestivalColors.OnPrimaryContainerLight,
+    onSecondaryContainer = TangyuanFestivalColors.OnSecondaryContainerLight,
+    onTertiaryContainer = TangyuanFestivalColors.OnTertiaryContainerLight,
+    error = TangyuanFestivalColors.ErrorLight,
+    onError = TangyuanFestivalColors.OnErrorLight,
+    errorContainer = TangyuanFestivalColors.ErrorContainerLight,
+    onErrorContainer = TangyuanFestivalColors.OnErrorContainerLight,
+    background = TangyuanFestivalColors.BackgroundLight,
+    onBackground = TangyuanFestivalColors.OnBackgroundLight,
+    surface = TangyuanFestivalColors.SurfaceLight,
+    onSurface = TangyuanFestivalColors.OnSurfaceLight,
+    surfaceVariant = TangyuanFestivalColors.SurfaceVariantLight,
+    onSurfaceVariant = TangyuanFestivalColors.OnSurfaceVariantLight,
+    outline = TangyuanFestivalColors.OutlineLight,
+)
+
+private val SpringFestivalDarkColorScheme = darkColorScheme(
+    primary = TangyuanFestivalColors.PrimaryDark,
+    secondary = TangyuanFestivalColors.SecondaryDark,
+    tertiary = TangyuanFestivalColors.TertiaryDark,
+    onPrimary = TangyuanFestivalColors.OnPrimaryDark,
+    onSecondary = TangyuanFestivalColors.OnSecondaryDark,
+    onTertiary = TangyuanFestivalColors.OnTertiaryDark,
+    primaryContainer = TangyuanFestivalColors.PrimaryContainerDark,
+    secondaryContainer = TangyuanFestivalColors.SecondaryContainerDark,
+    tertiaryContainer = TangyuanFestivalColors.TertiaryContainerDark,
+    onPrimaryContainer = TangyuanFestivalColors.OnPrimaryContainerDark,
+    onSecondaryContainer = TangyuanFestivalColors.OnSecondaryContainerDark,
+    onTertiaryContainer = TangyuanFestivalColors.OnTertiaryContainerDark,
+    error = TangyuanFestivalColors.ErrorDark,
+    onError = TangyuanFestivalColors.OnErrorDark,
+    errorContainer = TangyuanFestivalColors.ErrorContainerDark,
+    onErrorContainer = TangyuanFestivalColors.OnErrorContainerDark,
+    background = TangyuanFestivalColors.BackgroundDark,
+    onBackground = TangyuanFestivalColors.OnBackgroundDark,
+    surface = TangyuanFestivalColors.SurfaceDark,
+    onSurface = TangyuanFestivalColors.OnSurfaceDark,
+    surfaceVariant = TangyuanFestivalColors.SurfaceVariantDark,
+    onSurfaceVariant = TangyuanFestivalColors.OnSurfaceVariantDark,
+    outline = TangyuanFestivalColors.OutlineDark,
+)
+
 @Composable
 fun TangyuanTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: AppThemeMode = AppThemeMode.DEFAULT,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
@@ -75,6 +128,8 @@ fun TangyuanTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
+        themeMode == AppThemeMode.SPRING_FESTIVAL && darkTheme -> SpringFestivalDarkColorScheme
+        themeMode == AppThemeMode.SPRING_FESTIVAL -> SpringFestivalLightColorScheme
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

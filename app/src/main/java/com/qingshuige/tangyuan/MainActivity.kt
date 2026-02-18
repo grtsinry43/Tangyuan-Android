@@ -6,29 +6,96 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.qingshuige.tangyuan.ui.components.DownloadProgressDialog
+import com.qingshuige.tangyuan.ui.components.InstallPermissionDialog
+import com.qingshuige.tangyuan.ui.components.ReadyInstallDialog
+import com.qingshuige.tangyuan.ui.components.UpdatePromptDialog
+import com.qingshuige.tangyuan.ui.theme.AppThemeMode
 import com.qingshuige.tangyuan.ui.theme.TangyuanTheme
+import com.qingshuige.tangyuan.ui.theme.ThemePolicy
+import com.qingshuige.tangyuan.update.UpdateCoordinator
+import com.qingshuige.tangyuan.utils.PrefsManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    // 使用回调方式处理深层链接
     private var deepLinkCallback: ((Int) -> Unit)? = null
+    private lateinit var updateCoordinator: UpdateCoordinator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        updateCoordinator = UpdateCoordinator(this)
 
         setContent {
-            TangyuanTheme {
+            val themeModeValue by PrefsManager.getStringFlow(
+                key = PrefsManager.Keys.APP_THEME_MODE,
+                defaultValue = AppThemeMode.DEFAULT.value
+            ).collectAsState(initial = AppThemeMode.DEFAULT.value)
+            val themeUserOverridden by PrefsManager.getBooleanFlow(
+                key = PrefsManager.Keys.APP_THEME_USER_OVERRIDDEN,
+                defaultValue = false
+            ).collectAsState(initial = false)
+
+            val savedMode = AppThemeMode.fromValue(themeModeValue)
+            val effectiveThemeMode = ThemePolicy.resolveThemeMode(
+                savedMode = savedMode,
+                userOverridden = themeUserOverridden
+            )
+
+            TangyuanTheme(themeMode = effectiveThemeMode) {
                 App(
                     onDeepLinkCallbackSet = { callback ->
                         deepLinkCallback = callback
-                        // 如果onCreate时已经有deep link，立即处理
                         handleDeepLink(intent)
                     }
                 )
+
+                updateCoordinator.updateDialogInfo?.let { info ->
+                    UpdatePromptDialog(
+                        info = info,
+                        onDismiss = { updateCoordinator.dismissUpdateDialog() },
+                        onConfirm = { updateCoordinator.confirmUpdate(info) }
+                    )
+                }
+
+                if (updateCoordinator.showInstallPermissionDialog) {
+                    InstallPermissionDialog(
+                        onDismiss = { updateCoordinator.dismissInstallPermissionDialog() },
+                        onGoAuthorize = { updateCoordinator.goAuthorizeInstallPermission() }
+                    )
+                }
+
+                if (updateCoordinator.showReadyInstallDialog && updateCoordinator.pendingInstallFile != null) {
+                    ReadyInstallDialog(
+                        onDismiss = { updateCoordinator.dismissReadyInstallDialog() },
+                        onInstallNow = { updateCoordinator.installNowFromDialog() }
+                    )
+                }
+
+                if (updateCoordinator.showDownloadProgressDialog) {
+                    DownloadProgressDialog(
+                        progress = updateCoordinator.downloadProgressValue,
+                        progressText = updateCoordinator.downloadProgressText,
+                        onHideToBackground = { updateCoordinator.hideDownloadToBackground() }
+                    )
+                }
             }
         }
+
+        updateCoordinator.startCheckUpdates()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateCoordinator.onResume()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        updateCoordinator.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -47,29 +114,22 @@ class MainActivity : ComponentActivity() {
      */
     private fun handleDeepLink(intent: Intent?) {
         val data: Uri? = intent?.data
-
         if (data != null) {
             android.util.Log.d("MainActivity", "Deep Link URI: $data")
             android.util.Log.d("MainActivity", "Scheme: ${data.scheme}, Host: ${data.host}, Path: ${data.path}")
-
-            // 解析路径
             val pathSegments = data.pathSegments
             android.util.Log.d("MainActivity", "Path segments: $pathSegments")
 
             var postId: Int? = null
-
             when {
-                // tangyuan://post/123
                 pathSegments.size >= 2 && pathSegments[0] == "post" -> {
                     postId = pathSegments[1].toIntOrNull()
                     android.util.Log.d("MainActivity", "Format: tangyuan://post/{id}, extracted: $postId")
                 }
-                // tangyuan://123 (直接跳过host，只有路径)
                 pathSegments.size >= 1 -> {
                     postId = pathSegments[0].toIntOrNull()
                     android.util.Log.d("MainActivity", "Format: tangyuan://{id}, extracted: $postId")
                 }
-                // tangyuan://post (host是post，path是/123)
                 data.host == "post" && data.path?.isNotEmpty() == true -> {
                     postId = data.path?.substring(1)?.toIntOrNull()
                     android.util.Log.d("MainActivity", "Format: tangyuan://post/{id} (as host), extracted: $postId")

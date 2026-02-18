@@ -12,6 +12,11 @@ import kotlinx.coroutines.runBlocking
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "tangyuan_prefs")
 
 object PrefsManager {
+    object Keys {
+        const val APP_THEME_MODE = "app_theme_mode"
+        const val APP_THEME_USER_OVERRIDDEN = "app_theme_user_overridden"
+    }
+
     private lateinit var dataStore: DataStore<Preferences>
 
     fun init(context: Context) {
