@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,7 +63,7 @@ fun UserDetailScreen(
     val totalPostsCount by viewModel.totalPostsCount.collectAsState()
 
     var isRefreshing by remember { mutableStateOf(false) }
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     // 监听滚动，触发加载更多
     LaunchedEffect(listState) {
@@ -79,8 +81,10 @@ fun UserDetailScreen(
 
     // 延迟初始加载以避免阻塞共享元素动画
     LaunchedEffect(userId) {
-        kotlinx.coroutines.delay(200) // 等待共享元素动画完成
-        viewModel.loadUserDetails(userId)
+        if (user?.userId != userId) {
+            kotlinx.coroutines.delay(200) // 等待共享元素动画完成
+            viewModel.loadUserDetails(userId)
+        }
     }
 
     // 错误提示

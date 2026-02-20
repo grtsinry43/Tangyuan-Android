@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +16,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,7 +77,7 @@ fun PostDetailScreen(
     animatedContentScope: AnimatedContentScope? = null
 ) {
     val state by viewModel.state.collectAsState()
-    val listState = rememberLazyListState()
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val themeModeValue by PrefsManager.getStringFlow(
@@ -98,7 +98,9 @@ fun PostDetailScreen(
 
     // 加载帖子详情
     LaunchedEffect(postId) {
-        viewModel.loadPostDetail(postId)
+        if (state.postCard?.postId != postId) {
+            viewModel.loadPostDetail(postId)
+        }
     }
 
     Scaffold(
