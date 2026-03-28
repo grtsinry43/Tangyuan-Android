@@ -29,10 +29,9 @@ data class CommentUiState(
 
 @HiltViewModel
 class CommentViewModel @Inject constructor(
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
-
-    private val tokenManager = TokenManager()
 
     private val _commentUiState = MutableStateFlow(CommentUiState())
     val commentUiState: StateFlow<CommentUiState> = _commentUiState.asStateFlow()

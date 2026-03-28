@@ -163,7 +163,7 @@ fun SearchScreen(
                     item { SectionHeader(title = "用户") }
                     items(uiState.users, key = { it.userId }) { user ->
                         val avatarUrl = if (user.avatarGuid.isNotBlank()) {
-                            "${TangyuanApplication.instance.bizDomain}images/${user.avatarGuid}.jpg"
+                            "${TangyuanApplication.BIZ_DOMAIN}images/${user.avatarGuid}.jpg"
                         } else null
                         ListItem(
                             leadingContent = {

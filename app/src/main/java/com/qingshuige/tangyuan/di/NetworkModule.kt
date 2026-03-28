@@ -3,6 +3,7 @@ package com.qingshuige.tangyuan.di
 import android.content.Context
 import com.qingshuige.tangyuan.api.ApiInterface
 import com.qingshuige.tangyuan.network.NetworkClient
+import com.qingshuige.tangyuan.network.TokenManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,6 +17,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     
+    @Provides
+    @Singleton
+    fun provideTokenManager(@ApplicationContext context: Context): TokenManager {
+        return TokenManager(context)
+    }
+
     @Provides
     @Singleton
     fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {

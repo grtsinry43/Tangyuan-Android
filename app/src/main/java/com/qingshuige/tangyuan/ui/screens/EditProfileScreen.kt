@@ -201,7 +201,7 @@ fun EditProfileScreen(
                 // 头像编辑区域
                 AvatarEditSection(
                     avatarUrl = uiState.currentUser?.let {
-                        "${TangyuanApplication.instance.bizDomain}images/${it.avatarGuid}.jpg"
+                        "${TangyuanApplication.BIZ_DOMAIN}images/${it.avatarGuid}.jpg"
                     },
                     newAvatarGuid = uiState.newAvatarGuid,
                     isUploading = uiState.isUploadingAvatar,
@@ -298,7 +298,7 @@ private fun AvatarEditSection(
         Box {
             // 显示新头像或当前头像
             val displayUrl = newAvatarGuid?.let {
-                "${TangyuanApplication.instance.bizDomain}images/$it.jpg"
+                "${TangyuanApplication.BIZ_DOMAIN}images/$it.jpg"
             } ?: avatarUrl
 
             AsyncImage(

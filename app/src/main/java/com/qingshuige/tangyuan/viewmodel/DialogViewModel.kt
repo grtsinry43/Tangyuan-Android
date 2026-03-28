@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 全局对话框管理ViewModel
@@ -51,8 +50,7 @@ class DialogViewModel @Inject constructor() : ViewModel() {
  * 全局对话框管理器单例
  * 提供在非Composable上下文中使用的静态方法
  */
-@Singleton
-class GlobalDialogManager @Inject constructor() {
+class GlobalDialogManager private constructor() {
 
     private var viewModel: DialogViewModel? = null
 

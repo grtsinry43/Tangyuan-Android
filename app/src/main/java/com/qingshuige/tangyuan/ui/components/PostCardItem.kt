@@ -252,7 +252,7 @@ private fun PostCardHeader(
     ) {
         // 作者头像
         ShimmerAsyncImage(
-            imageUrl = "${TangyuanApplication.instance.bizDomain}images/${postCard.authorAvatar}.jpg",
+            imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${postCard.authorAvatar}.jpg",
             contentDescription = "${postCard.authorName}的头像",
             modifier = Modifier
                 .size(40.dp)
@@ -362,7 +362,7 @@ private fun PostCardImages(
         1 -> {
             // 单张图片
             ShimmerAsyncImage(
-                imageUrl = "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[0]}.jpg",
+                imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[0]}.jpg",
                 contentDescription = "文章图片",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -393,7 +393,7 @@ private fun PostCardImages(
             ) {
                 imageUUIDs.forEachIndexed { index, uuid ->
                     ShimmerAsyncImage(
-                        imageUrl = "${TangyuanApplication.instance.bizDomain}images/$uuid.jpg",
+                        imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/$uuid.jpg",
                         contentDescription = "文章图片",
                         modifier = Modifier
                             .weight(1f)
@@ -426,7 +426,7 @@ private fun PostCardImages(
             ) {
                 imageUUIDs.forEachIndexed { index, uuid ->
                     ShimmerAsyncImage(
-                        imageUrl = "${TangyuanApplication.instance.bizDomain}images/$uuid.jpg",
+                        imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/$uuid.jpg",
                         contentDescription = "文章图片",
                         modifier = Modifier
                             .weight(1f)

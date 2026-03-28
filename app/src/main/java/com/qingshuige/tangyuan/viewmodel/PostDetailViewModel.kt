@@ -11,6 +11,7 @@ import com.qingshuige.tangyuan.model.PostDetailState
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostDetailRepository
 import com.qingshuige.tangyuan.repository.PostRepository
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import com.qingshuige.tangyuan.utils.ImageSaveUtils
 import com.qingshuige.tangyuan.utils.UIUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,11 +27,10 @@ import javax.inject.Inject
 @HiltViewModel
 class PostDetailViewModel @Inject constructor(
     private val postDetailRepository: PostDetailRepository,
-    private val postRepository: PostRepository, // Inject PostRepository for cache access
+    private val postRepository: PostRepository,
+    private val tokenManager: TokenManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-    
-    private val tokenManager = TokenManager()
     
     private val _state = MutableStateFlow(PostDetailState())
     val state: StateFlow<PostDetailState> = _state.asStateFlow()
@@ -64,20 +64,9 @@ class PostDetailViewModel @Inject constructor(
                 // 先加载帖子详情，立即更新UI
                 postRepository.getPostCard(postId) // Use PostRepository to hit cache/network unified path
                     .catch { e ->
-                        val friendlyMessage = when {
-                            e.message?.contains("404", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                            e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
-                            e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                            e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                            e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                            e.message?.contains("post body", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                            e.message?.contains("deleted", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                            e.message?.contains("not found", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                            else -> "这个帖子可能不存在或已删除"
-                        }
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            error = friendlyMessage
+                            error = ErrorMapper.toDetailErrorMessage(e)
                         )
                     }
                     .collect { postCard ->
@@ -112,20 +101,9 @@ class PostDetailViewModel @Inject constructor(
                         loadComments(postId, currentUserId)
                     }
             } catch (e: Exception) {
-                val friendlyMessage = when {
-                    e.message?.contains("404", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                    e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
-                    e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                    e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                    e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                    e.message?.contains("post body", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                    e.message?.contains("deleted", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                    e.message?.contains("not found", ignoreCase = true) == true -> "这个帖子可能不存在或已删除"
-                    else -> "这个帖子可能不存在或已删除"
-                }
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = friendlyMessage
+                    error = ErrorMapper.toDetailErrorMessage(e)
                 )
             }
         }

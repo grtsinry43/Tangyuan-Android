@@ -7,6 +7,7 @@ import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.RecommendedPostsState
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TopicViewModel @Inject constructor(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(RecommendedPostsState())
@@ -51,22 +53,13 @@ class TopicViewModel @Inject constructor(
                     exceptedIds = if (isRefresh) emptyList() else _loadedPostIds.toList()
                 )
                 .catch { e ->
-                    val friendlyMessage = when {
-                        e.message?.contains("404", ignoreCase = true) == true -> "暂无更多内容"
-                        e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
-                        e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                        e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                        e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                        else -> "网络连接失败，请检查网络设置"
-                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        error = friendlyMessage
+                        error = ErrorMapper.toListErrorMessage(e)
                     )
                     // 追踪失败
                     try {
-                        val tokenManager = TokenManager()
                         val userId = tokenManager.getUserIdFromToken()?.toString()
                         OpenPanelClient.getInstance().track("home_load_fail", mapOf(
                             "section_id" to defaultSectionId,
@@ -97,18 +90,10 @@ class TopicViewModel @Inject constructor(
                 }
                 
             } catch (e: Exception) {
-                val friendlyMessage = when {
-                    e.message?.contains("404", ignoreCase = true) == true -> "暂无更多内容"
-                    e.message?.contains("timeout", ignoreCase = true) == true -> "网络连接超时，请检查网络设置"
-                    e.message?.contains("network", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                    e.message?.contains("connection", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                    e.message?.contains("host", ignoreCase = true) == true -> "网络连接失败，请检查网络设置"
-                    else -> "网络连接失败，请检查网络设置"
-                }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    error = friendlyMessage
+                    error = ErrorMapper.toListErrorMessage(e)
                 )
             }
         }

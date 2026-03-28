@@ -37,7 +37,8 @@ data class NotificationUiState(
 class NotificationViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
     private val userRepository: UserRepository,
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _notificationUiState = MutableStateFlow(NotificationUiState())
@@ -55,7 +56,6 @@ class NotificationViewModel @Inject constructor(
                     )
                     // 追踪失败
                     try {
-                        val tokenManager = TokenManager()
                         val userId = tokenManager.getUserIdFromToken()?.toString()
                         OpenPanelClient.getInstance().track("load_notification_fail", mapOf(
                             "error" to (e.message ?: "unknown")
@@ -180,7 +180,6 @@ class NotificationViewModel @Inject constructor(
                     )
                     // 追踪失败
                     try {
-                        val tokenManager = TokenManager()
                         val userId = tokenManager.getUserIdFromToken()?.toString()
                         OpenPanelClient.getInstance().track("notification_mark_read_fail", mapOf(
                             "error" to (e.message ?: "unknown")

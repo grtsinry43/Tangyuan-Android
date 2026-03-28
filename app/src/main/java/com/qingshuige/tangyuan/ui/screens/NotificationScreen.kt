@@ -271,7 +271,7 @@ private fun NotificationItem(
         // 用户头像
         Box {
             AsyncImage(
-                model = user?.let { "${TangyuanApplication.instance.bizDomain}images/${it.avatarGuid}.jpg" },
+                model = user?.let { "${TangyuanApplication.BIZ_DOMAIN}images/${it.avatarGuid}.jpg" },
                 contentDescription = "用户头像",
                 modifier = Modifier
                     .size(48.dp)

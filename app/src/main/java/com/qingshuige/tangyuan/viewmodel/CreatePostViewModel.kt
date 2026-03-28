@@ -29,10 +29,9 @@ import javax.inject.Inject
 @HiltViewModel
 class CreatePostViewModel @Inject constructor(
     private val createPostRepository: CreatePostRepository,
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
-
-    private val tokenManager = TokenManager()
 
     private val _uiState = MutableStateFlow(CreatePostState())
     val uiState: StateFlow<CreatePostState> = _uiState.asStateFlow()

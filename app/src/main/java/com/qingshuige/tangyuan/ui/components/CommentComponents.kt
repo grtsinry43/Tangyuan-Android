@@ -162,7 +162,7 @@ private fun CommentHeader(
         // 用户头像
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data("${TangyuanApplication.instance.bizDomain}images/${comment.authorAvatar}.jpg")
+                .data("${TangyuanApplication.BIZ_DOMAIN}images/${comment.authorAvatar}.jpg")
                 .crossfade(true)
                 .build(),
             contentDescription = "${comment.authorName}的头像",
@@ -231,7 +231,7 @@ private fun CommentHeader(
 private fun CommentImage(imageGuid: String) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
-            .data("${TangyuanApplication.instance.bizDomain}images/$imageGuid.jpg")
+            .data("${TangyuanApplication.BIZ_DOMAIN}images/$imageGuid.jpg")
             .crossfade(true)
             .build(),
         contentDescription = "评论图片",
@@ -408,7 +408,7 @@ private fun ReplyItem(
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data("${TangyuanApplication.instance.bizDomain}images/${reply.authorAvatar}.jpg")
+                    .data("${TangyuanApplication.BIZ_DOMAIN}images/${reply.authorAvatar}.jpg")
                     .crossfade(true)
                     .build(),
                 contentDescription = "${reply.authorName}的头像",

@@ -22,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class UserDetailViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     // 用户信息状态
@@ -72,7 +73,6 @@ class UserDetailViewModel @Inject constructor(
                     _isLoading.value = false
                     // 追踪失败
                     try {
-                        val tokenManager = TokenManager()
                         val userId1 = tokenManager.getUserIdFromToken()?.toString()
                         OpenPanelClient.getInstance().track("load_user_info_fail", mapOf(
                             "destUserId" to userId,
@@ -105,7 +105,6 @@ class UserDetailViewModel @Inject constructor(
                     _isPostsLoading.value = false
                     // 追踪失败
                     try {
-                        val tokenManager = TokenManager()
                         val userId1 = tokenManager.getUserIdFromToken()?.toString()
                         OpenPanelClient.getInstance().track("load_user_posts_fail", mapOf(
                             "destUserId" to userId,

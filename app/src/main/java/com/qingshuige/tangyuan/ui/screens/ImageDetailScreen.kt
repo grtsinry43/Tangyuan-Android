@@ -102,7 +102,7 @@ fun ImageDetailScreen(
                     totalCount = imageUUIDs.size,
                     onSaveClick = {
                         val currentImageUrl =
-                            "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[pagerState.currentPage]}.jpg"
+                            "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[pagerState.currentPage]}.jpg"
                         viewModel.saveCurrentImage(currentImageUrl)
                     }
                 )
@@ -175,7 +175,7 @@ private fun BackgroundBlurredImage(
     if (imageUUIDs.isNotEmpty() && currentPage < imageUUIDs.size) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[currentPage]}.jpg")
+                .data("${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[currentPage]}.jpg")
                 .crossfade(true)
                 .build(),
             contentDescription = null,
@@ -267,7 +267,7 @@ private fun ImagePager(
         userScrollEnabled = canScroll // ✅ 当缩放时禁用Pager滑动
     ) { page ->
         ZoomableImage(
-            imageUrl = "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[page]}.jpg",
+            imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[page]}.jpg",
             postId = postId,
             imageIndex = page,
             contentDescription = "图片 ${page + 1}",
@@ -509,7 +509,7 @@ private fun PostAuthorInfo(
     ) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data("${TangyuanApplication.instance.bizDomain}images/${postCard.authorAvatar}.jpg")
+                .data("${TangyuanApplication.BIZ_DOMAIN}images/${postCard.authorAvatar}.jpg")
                 .crossfade(true)
                 .build(),
             contentDescription = "${postCard.authorName}的头像",

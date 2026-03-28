@@ -324,7 +324,7 @@ private fun UserProfileSection(
         ) {
             // 左侧头像 - 支持共享元素动画
             ShimmerAsyncImage(
-                imageUrl = "${TangyuanApplication.instance.bizDomain}images/${user.avatarGuid}.jpg",
+                imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${user.avatarGuid}.jpg",
                 contentDescription = "${user.nickName}的头像",
                 modifier = Modifier
                     .size(80.dp)

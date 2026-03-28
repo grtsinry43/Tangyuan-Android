@@ -630,7 +630,7 @@ private fun PostDetailHeader(
     ) {
                     AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data("${TangyuanApplication.instance.bizDomain}images/${postCard.authorAvatar}.jpg")
+                        .data("${TangyuanApplication.BIZ_DOMAIN}images/${postCard.authorAvatar}.jpg")
                         .crossfade(false)
                         .build(),
                     contentDescription = "${postCard.authorName}的头像",            modifier = Modifier
@@ -704,7 +704,7 @@ private fun PostDetailImages(
         1 -> {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[0]}.jpg")
+                    .data("${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[0]}.jpg")
                                             .crossfade(false)
                                             .build(),
                                         contentDescription = "文章图片",                modifier = Modifier
@@ -735,7 +735,7 @@ private fun PostDetailImages(
                 items(imageUUIDs.size) { index ->
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[index]}.jpg")
+                            .data("${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[index]}.jpg")
                                                     .crossfade(false)
                                                     .build(),
                                                 contentDescription = "文章图片",                        modifier = Modifier
