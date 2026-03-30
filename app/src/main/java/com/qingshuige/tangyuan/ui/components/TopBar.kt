@@ -22,9 +22,13 @@ package com.qingshuige.tangyuan.ui.components
  *
  */
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,13 +47,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,6 +81,8 @@ enum class PageLevel {
     PRIMARY,    // 一级页面
     SECONDARY   // 二级页面
 }
+
+private val SecondaryTopBarEasing = CubicBezierEasing(0.22f, 1.0f, 0.36f, 1.0f)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
 @Composable
@@ -231,6 +243,129 @@ fun TangyuanTopBar(
                 }
             )
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnimatedSecondaryTopBar(
+    title: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    var animateIn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        animateIn = true
+    }
+
+    TopAppBar(
+        title = {
+            AnimatedTopBarTitle(
+                visible = animateIn,
+                content = title
+            )
+        },
+        navigationIcon = {
+            AnimatedTopBarSlot(
+                visible = animateIn,
+                fromStart = true,
+                delayMillis = 10,
+                content = navigationIcon
+            )
+        },
+        actions = {
+            AnimatedTopBarActions(
+                visible = animateIn,
+                delayMillis = 90,
+                content = actions
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = containerColor,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun AnimatedTopBarTitle(
+    visible: Boolean,
+    content: @Composable () -> Unit
+) {
+    val progress by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 340,
+            delayMillis = 40,
+            easing = SecondaryTopBarEasing
+        ),
+        label = "secondary_topbar_title"
+    )
+    val density = LocalDensity.current
+    val startOffset = with(density) { 14.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = progress
+                translationX = startOffset * (1f - progress)
+            }
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun AnimatedTopBarActions(
+    visible: Boolean,
+    delayMillis: Int,
+    content: @Composable RowScope.() -> Unit
+) {
+    AnimatedTopBarSlot(
+        visible = visible,
+        fromStart = false,
+        delayMillis = delayMillis
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
+    }
+}
+
+@Composable
+private fun AnimatedTopBarSlot(
+    visible: Boolean,
+    fromStart: Boolean,
+    delayMillis: Int,
+    content: @Composable () -> Unit
+) {
+    val progress by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 360,
+            delayMillis = delayMillis,
+            easing = SecondaryTopBarEasing
+        ),
+        label = "secondary_topbar_slot"
+    )
+    val density = LocalDensity.current
+    val travelPx = with(density) { 18.dp.toPx() } * if (fromStart) -1f else 1f
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                alpha = progress
+                translationX = travelPx * (1f - progress)
+            }
+    ) {
+        content()
+    }
 }
 
 @Preview

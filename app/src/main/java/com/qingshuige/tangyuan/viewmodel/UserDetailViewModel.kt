@@ -11,6 +11,7 @@ import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.PostRepository
 import com.qingshuige.tangyuan.repository.UserRepository
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,10 +67,20 @@ class UserDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            _user.value = null
+            _userPosts.value = emptyList()
+            _hasMorePosts.value = false
+            _totalPostsCount.value = 0
+            allPostMetadatas = emptyList()
+            currentPage = 0
             
             userRepository.getUserById(userId)
                 .catch { e ->
-                    _errorMessage.value = e.message ?: "获取用户信息失败"
+                    _errorMessage.value = ErrorMapper.toUserDetailErrorMessage(e)
+                    _user.value = null
+                    _userPosts.value = emptyList()
+                    _hasMorePosts.value = false
+                    _totalPostsCount.value = 0
                     _isLoading.value = false
                     // 追踪失败
                     try {

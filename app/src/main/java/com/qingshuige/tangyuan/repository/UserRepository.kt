@@ -36,11 +36,14 @@ class UserRepository @Inject constructor(
     
     fun getUserById(userId: Int): Flow<User> = flow {
         val response = apiInterface.getUser(userId).awaitResponse()
+        if (response.code() == 404) {
+            throw Exception("用户不存在或已被删除")
+        }
         if (response.isSuccessful) {
             response.body()?.let { emit(it) } 
-                ?: throw Exception("User not found")
+                ?: throw Exception("用户不存在或已被删除")
         } else {
-            throw Exception("Failed to get user: ${response.message()}")
+            throw Exception("获取用户信息失败")
         }
     }
     

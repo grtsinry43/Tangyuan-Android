@@ -26,6 +26,7 @@ import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.model.PostMetadata
+import com.qingshuige.tangyuan.ui.components.AnimatedSecondaryTopBar
 import com.qingshuige.tangyuan.ui.components.PostCardItem
 import com.qingshuige.tangyuan.viewmodel.SearchViewModel
 
@@ -42,8 +43,10 @@ fun SearchScreen(
     var searchSubmitted by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            AnimatedSecondaryTopBar(
+                containerColor = MaterialTheme.colorScheme.surface,
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
@@ -239,5 +242,3 @@ private fun SectionHeader(title: String) {
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
     )
 }
-
-

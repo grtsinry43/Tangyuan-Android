@@ -34,8 +34,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -52,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.qingshuige.tangyuan.model.PostWithContent
+import com.qingshuige.tangyuan.ui.components.AnimatedSecondaryTopBar
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.PostManagementViewModel
@@ -87,8 +86,10 @@ fun PostManagementScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            AnimatedSecondaryTopBar(
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = {
                     Text(
                         text = "帖子管理".withPanguSpacing(),
@@ -106,7 +107,6 @@ fun PostManagementScreen(
                     }
                 },
                 actions = {
-                    // 全选按钮
                     if (uiState.posts.isNotEmpty()) {
                         if (uiState.selectedPosts.size == uiState.posts.size) {
                             TextButton(onClick = { viewModel.clearSelection() }) {
@@ -119,7 +119,6 @@ fun PostManagementScreen(
                         }
                     }
 
-                    // 删除按钮
                     if (uiState.selectedPosts.isNotEmpty()) {
                         IconButton(
                             onClick = { showDeleteDialog = true },
@@ -132,10 +131,7 @@ fun PostManagementScreen(
                             )
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { innerPadding ->

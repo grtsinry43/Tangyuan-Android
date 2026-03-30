@@ -42,6 +42,7 @@ import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.PostDetailViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -601,6 +602,8 @@ private fun ErrorContent(
     message: String,
     onRetry: () -> Unit
 ) {
+    val caption = remember(message) { ErrorMapper.toLiteraryCaption(message) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -610,34 +613,25 @@ private fun ErrorContent(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.ErrorOutline,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(48.dp)
-            )
             Text(
-                text = "加载失败",
-                style = MaterialTheme.typography.headlineSmall,
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
                 fontFamily = LiteraryFontFamily,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
                 fontFamily = LiteraryFontFamily,
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
             )
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.2f)
-                )
-            ) {
+            TextButton(onClick = onRetry) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.model.Category
+import com.qingshuige.tangyuan.ui.components.AnimatedSecondaryTopBar
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.viewmodel.CreatePostViewModel
@@ -163,8 +164,10 @@ fun CreatePostScreen(
 
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            AnimatedSecondaryTopBar(
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = {
                     Text(
                         text = "发布动态",
@@ -197,10 +200,7 @@ fun CreatePostScreen(
                             Text("发布")
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { paddingValues ->

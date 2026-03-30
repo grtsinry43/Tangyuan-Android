@@ -47,6 +47,7 @@ import com.qingshuige.tangyuan.ui.theme.ThemePolicy
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanShapes
 import com.qingshuige.tangyuan.utils.PrefsManager
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import com.qingshuige.tangyuan.utils.ShareCardGenerator
 import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.utils.withPanguSpacing
@@ -902,6 +903,8 @@ private fun ErrorContent(
     message: String,
     onRetry: () -> Unit
 ) {
+    val caption = remember(message) { ErrorMapper.toLiteraryCaption(message) }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -909,46 +912,38 @@ private fun ErrorContent(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp)
         ) {
-            Icon(
-                imageVector = Icons.Outlined.ErrorOutline,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
-            )
-            
             Text(
-                text = "加载失败",
-                style = MaterialTheme.typography.headlineSmall,
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
                 fontFamily = LiteraryFontFamily,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.SemiBold
             )
             
             Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
                 fontFamily = LiteraryFontFamily,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center
             )
             
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
+            TextButton(onClick = onRetry) {
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "重试",
-                    fontFamily = LiteraryFontFamily
+                    fontFamily = LiteraryFontFamily,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
