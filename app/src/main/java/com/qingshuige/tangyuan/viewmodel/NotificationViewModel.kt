@@ -11,11 +11,15 @@ import com.qingshuige.tangyuan.repository.CommentRepository
 import com.qingshuige.tangyuan.repository.NotificationRepository
 import com.qingshuige.tangyuan.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import javax.inject.Inject
 
 data class NotificationWithUserAndComment(
@@ -25,12 +29,31 @@ data class NotificationWithUserAndComment(
     val postId: Int? // 根据通知类型解析出的帖子 ID
 )
 
+enum class NotificationCategory(val label: String) {
+    ALL("全部"),
+    COMMENT("评论"),
+    REPLY("回复"),
+    SOCIAL("赞与关注"),
+    OTHER("其他");
+
+    fun matches(item: NotificationWithUserAndComment): Boolean {
+        if (this == ALL) return true
+        return when (item.notification.type.orEmpty()) {
+            "comment" -> this == COMMENT
+            "reply" -> this == REPLY
+            "like", "follow" -> this == SOCIAL
+            else -> this == OTHER
+        }
+    }
+}
+
 data class NotificationUiState(
     val isLoading: Boolean = false,
     val notificationsWithData: List<NotificationWithUserAndComment> = emptyList(),
     val unreadCount: Int = 0,
     val error: String? = null,
-    val isMarkingAsRead: Boolean = false
+    val isMarkingAsRead: Boolean = false,
+    val selectedCategory: NotificationCategory = NotificationCategory.ALL
 )
 
 @HiltViewModel
@@ -65,9 +88,10 @@ class NotificationViewModel @Inject constructor(
                     }
                 }
                 .collect { notifications ->
-                    // 处理每个通知，根据类型获取相应的信息
-                    val notificationsWithData = notifications.map { notification ->
-                        processNotification(notification)
+                    val notificationsWithData = supervisorScope {
+                        notifications.map { notification ->
+                            async { processNotification(notification) }
+                        }.awaitAll()
                     }
 
                     val unreadCount = notifications.count { !it.isRead }
@@ -82,90 +106,49 @@ class NotificationViewModel @Inject constructor(
 
     private suspend fun processNotification(notification: NewNotification): NotificationWithUserAndComment {
         return when (notification.sourceType) {
-            "comment", "reply" -> {
-                // sourceId 是评论 ID，需要获取评论信息
-                var comment: Comment? = null
-                var user: User? = null
-                var postId: Int? = null
-
-                try {
-                    commentRepository.getCommentById(notification.sourceId)
-                        .catch { /* 忽略错误 */ }
-                        .collect { commentData ->
-                            comment = commentData
-                            postId = commentData.postId
-
-                            // 从评论中获取用户 ID，然后获取用户信息
-                            userRepository.getUserById(commentData.userId)
-                                .catch { /* 忽略错误 */ }
-                                .collect { userData ->
-                                    user = userData
-                                }
-                        }
-                } catch (e: Exception) {
-                    // 忽略错误，继续处理
-                }
-
-                NotificationWithUserAndComment(
-                    notification = notification,
-                    user = user,
-                    comment = comment,
-                    postId = postId
-                )
-            }
-
-            "like" -> {
-                // sourceId 是帖子 ID
-                NotificationWithUserAndComment(
-                    notification = notification,
-                    user = null, // 点赞通知可能没有用户信息
-                    comment = null,
-                    postId = notification.sourceId
-                )
-            }
-
-            "follow" -> {
-                // sourceId 是用户 ID
-                var user: User? = null
-                try {
-                    userRepository.getUserById(notification.sourceId)
-                        .catch { /* 忽略错误 */ }
-                        .collect { userData ->
-                            user = userData
-                        }
-                } catch (e: Exception) {
-                    // 忽略错误
-                }
-
-                NotificationWithUserAndComment(
-                    notification = notification,
-                    user = user,
-                    comment = null,
-                    postId = null
-                )
-            }
-
-            else -> {
-                // 未知类型，尝试作为用户 ID 处理
-                var user: User? = null
-                try {
-                    userRepository.getUserById(notification.sourceId)
-                        .catch { /* 忽略错误 */ }
-                        .collect { userData ->
-                            user = userData
-                        }
-                } catch (e: Exception) {
-                    // 忽略错误
-                }
-
-                NotificationWithUserAndComment(
-                    notification = notification,
-                    user = user,
-                    comment = null,
-                    postId = null
-                )
-            }
+            "comment", "reply" -> buildCommentNotification(notification)
+            "like" -> NotificationWithUserAndComment(
+                notification = notification,
+                user = null,
+                comment = null,
+                postId = notification.sourceId
+            )
+            "follow" -> NotificationWithUserAndComment(
+                notification = notification,
+                user = fetchUser(notification.sourceId),
+                comment = null,
+                postId = null
+            )
+            else -> NotificationWithUserAndComment(
+                notification = notification,
+                user = fetchUser(notification.sourceId),
+                comment = null,
+                postId = null
+            )
         }
+    }
+
+    private suspend fun buildCommentNotification(notification: NewNotification): NotificationWithUserAndComment {
+        val comment = fetchComment(notification.sourceId)
+        val user = comment?.let { fetchUser(it.userId) }
+        return NotificationWithUserAndComment(
+            notification = notification,
+            user = user,
+            comment = comment,
+            postId = comment?.postId
+        )
+    }
+
+    private suspend fun fetchUser(userId: Int): User? {
+        return runCatching {
+            userRepository.getUserById(userId).first()
+        }.getOrNull()
+    }
+
+    private suspend fun fetchComment(commentId: Int): Comment? {
+        return runCatching {
+            commentRepository.getCommentById(commentId).first()
+        }.getOrNull()
     }
 
     fun markAsRead(notificationId: Int) {
@@ -211,7 +194,7 @@ class NotificationViewModel @Inject constructor(
         }
     }
 
-    fun markAllAsRead(userId: Int) {
+    fun markAllAsRead() {
         viewModelScope.launch {
             _notificationUiState.value = _notificationUiState.value.copy(isMarkingAsRead = true)
 
@@ -258,6 +241,10 @@ class NotificationViewModel @Inject constructor(
 
     fun clearError() {
         _notificationUiState.value = _notificationUiState.value.copy(error = null)
+    }
+
+    fun selectCategory(category: NotificationCategory) {
+        _notificationUiState.value = _notificationUiState.value.copy(selectedCategory = category)
     }
 
     fun clearNotifications() {

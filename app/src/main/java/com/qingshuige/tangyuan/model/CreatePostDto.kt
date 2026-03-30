@@ -2,6 +2,15 @@ package com.qingshuige.tangyuan.model
 
 import java.util.Date
 
+data class CreatePostDraft(
+    val content: String = "",
+    val selectedCategoryId: Int? = null,
+    val selectedSectionId: Int = 0,
+    val selectedImageUris: List<String> = emptyList(),
+    val uploadedImageUUIDs: List<String> = emptyList(),
+    val savedAt: Long = System.currentTimeMillis()
+)
+
 data class CreatePostDto(
     val textContent: String,
     val categoryId: Int,
@@ -43,7 +52,8 @@ data class CreatePostState(
     val isUploading: Boolean = false,
     val uploadProgress: Map<String, Float> = emptyMap(),
     val error: String? = null,
-    val success: Boolean = false
+    val success: Boolean = false,
+    val draftStatus: String? = null
 ) {
     
     val canPost: Boolean
@@ -58,6 +68,9 @@ data class CreatePostState(
         
     val hasImages: Boolean
         get() = selectedImageUris.isNotEmpty()
+
+    val hasDraftContent: Boolean
+        get() = content.isNotBlank() || selectedImageUris.isNotEmpty() || uploadedImageUUIDs.isNotEmpty()
         
     val isContentValid: Boolean
         get() = content.isNotBlank() && content.length <= 2000

@@ -106,7 +106,14 @@ fun CreatePostScreen(
     }
 
     LaunchedEffect(sectionId) {
-        sectionId?.let { viewModel.selectSection(it) }
+        viewModel.initializeDraft(sectionId)
+    }
+
+    LaunchedEffect(uiState.draftStatus) {
+        uiState.draftStatus?.let {
+            UIUtils.showSuccess(it)
+            viewModel.clearDraftStatus()
+        }
     }
 
     // 显示错误提示
@@ -184,6 +191,14 @@ fun CreatePostScreen(
                     }
                 },
                 actions = {
+                    if (uiState.hasDraftContent && !uiState.isLoading) {
+                        TextButton(
+                            onClick = { viewModel.clearDraft() },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text("清空")
+                        }
+                    }
                     Button(
                         onClick = { viewModel.createPost() },
                         enabled = uiState.canPost,

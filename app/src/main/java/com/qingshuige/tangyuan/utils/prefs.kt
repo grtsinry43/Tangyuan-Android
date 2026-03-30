@@ -14,6 +14,7 @@ object PrefsManager {
     object Keys {
         const val APP_THEME_MODE = "app_theme_mode"
         const val APP_THEME_USER_OVERRIDDEN = "app_theme_user_overridden"
+        const val CREATE_POST_DRAFT_PREFIX = "create_post_draft"
     }
 
     private lateinit var dataStore: DataStore<Preferences>
