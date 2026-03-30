@@ -33,10 +33,9 @@ data class UserUiState(
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
-
-    private val tokenManager = TokenManager()
 
     private val _loginState = MutableStateFlow(LoginState())
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
@@ -311,7 +310,7 @@ class UserViewModel @Inject constructor(
     fun getCurrentUserAvatarUrl(): String? {
         val user = _loginState.value.user ?: _userUiState.value.currentUser
         return user?.let { 
-            "${com.qingshuige.tangyuan.TangyuanApplication.instance.bizDomain}images/${it.avatarGuid}.jpg"
+            "${com.qingshuige.tangyuan.TangyuanApplication.BIZ_DOMAIN}images/${it.avatarGuid}.jpg"
         }
     }
 

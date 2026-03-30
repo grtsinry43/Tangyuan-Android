@@ -6,10 +6,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -64,6 +66,44 @@ import com.qingshuige.tangyuan.viewmodel.UserViewModel
 private val QuickSpringEasing = CubicBezierEasing(0.34f, 1.3f, 0.64f, 1.0f)
 private val QuickEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 
+// 通用淡入淡出过渡动画（用于详情页等需要共享元素的页面）
+private fun fadeEnterTransition() = fadeIn(
+    animationSpec = tween(durationMillis = 300, easing = QuickEasing)
+)
+
+private fun fadeExitTransition() = fadeOut(
+    animationSpec = tween(durationMillis = 200, easing = QuickEasing)
+)
+
+private fun fadePopEnterTransition() = fadeIn(
+    animationSpec = tween(durationMillis = 200, easing = QuickEasing)
+)
+
+private fun fadePopExitTransition() = fadeOut(
+    animationSpec = tween(durationMillis = 300, easing = QuickEasing)
+)
+
+// 通用水平滑动过渡动画（用于设置、关于等二级页面）
+private fun slideEnterTransition() = slideInHorizontally(
+    initialOffsetX = { it },
+    animationSpec = tween(durationMillis = 300, easing = QuickSpringEasing)
+)
+
+private fun slideExitTransition() = slideOutHorizontally(
+    targetOffsetX = { -it / 3 },
+    animationSpec = tween(durationMillis = 300, easing = QuickEasing)
+)
+
+private fun slidePopEnterTransition() = slideInHorizontally(
+    initialOffsetX = { -it / 3 },
+    animationSpec = tween(durationMillis = 300, easing = QuickEasing)
+)
+
+private fun slidePopExitTransition() = slideOutHorizontally(
+    targetOffsetX = { it },
+    animationSpec = tween(durationMillis = 250, easing = QuickEasing)
+)
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun App(
@@ -98,46 +138,25 @@ fun App(
     val currentMessage by messageViewModel.currentMessage.collectAsState()
     val currentDialog by dialogViewModel.currentDialog.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         SharedTransitionLayout {
             NavHost(
                 navController = navController,
-                startDestination = "main"
+                startDestination = "main",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 composable(
                     route = "main",
-                    enterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { fadeEnterTransition() },
+                    exitTransition = { fadeExitTransition() },
+                    popEnterTransition = { fadePopEnterTransition() },
+                    popExitTransition = { fadePopExitTransition() }
                 ) {
                     MainFlow(
                         onLoginClick = { navController.navigate(Screen.Login.route) },
@@ -211,38 +230,10 @@ fun App(
                     arguments = listOf(
                         navArgument("postId") { type = NavType.IntType }
                     ),
-                    enterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { fadeEnterTransition() },
+                    exitTransition = { fadeExitTransition() },
+                    popEnterTransition = { fadePopEnterTransition() },
+                    popExitTransition = { fadePopExitTransition() }
                 ) { backStackEntry ->
                     val postId = backStackEntry.arguments?.getInt("postId") ?: 0
 
@@ -280,38 +271,10 @@ fun App(
                         navArgument("postId") { type = NavType.IntType },
                         navArgument("imageIndex") { type = NavType.IntType }
                     ),
-                    enterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { fadeEnterTransition() },
+                    exitTransition = { fadeExitTransition() },
+                    popEnterTransition = { fadePopEnterTransition() },
+                    popExitTransition = { fadePopExitTransition() }
                 ) { backStackEntry ->
                     val postId = backStackEntry.arguments?.getInt("postId") ?: 0
                     val imageIndex = backStackEntry.arguments?.getInt("imageIndex") ?: 0
@@ -345,38 +308,10 @@ fun App(
                     arguments = listOf(
                         navArgument("userId") { type = NavType.IntType }
                     ),
-                    enterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { fadeEnterTransition() },
+                    exitTransition = { fadeExitTransition() },
+                    popEnterTransition = { fadePopEnterTransition() },
+                    popExitTransition = { fadePopExitTransition() }
                 ) { backStackEntry ->
                     val userId = backStackEntry.arguments?.getInt("userId") ?: 0
 
@@ -416,38 +351,10 @@ fun App(
                     arguments = listOf(
                         navArgument("categoryId") { type = NavType.IntType }
                     ),
-                    enterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { fadeEnterTransition() },
+                    exitTransition = { fadeExitTransition() },
+                    popEnterTransition = { fadePopEnterTransition() },
+                    popExitTransition = { fadePopExitTransition() }
                 ) { backStackEntry ->
                     val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
 
@@ -475,42 +382,10 @@ fun App(
 
                 composable(
                     route = Screen.About.route,
-                    enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickSpringEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 250,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { slideEnterTransition() },
+                    exitTransition = { slideExitTransition() },
+                    popEnterTransition = { slidePopEnterTransition() },
+                    popExitTransition = { slidePopExitTransition() }
                 ) {
                     AboutScreen(
                         onBackClick = { navController.popBackStack() }
@@ -519,42 +394,10 @@ fun App(
 
                 composable(
                     route = Screen.ThemeSettings.route,
-                    enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickSpringEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 250,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { slideEnterTransition() },
+                    exitTransition = { slideExitTransition() },
+                    popEnterTransition = { slidePopEnterTransition() },
+                    popExitTransition = { slidePopExitTransition() }
                 ) {
                     ThemeSettingsScreen(
                         onBackClick = { navController.popBackStack() }
@@ -563,42 +406,10 @@ fun App(
 
                 composable(
                     route = Screen.DesignSystem.route,
-                    enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickSpringEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 250,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { slideEnterTransition() },
+                    exitTransition = { slideExitTransition() },
+                    popEnterTransition = { slidePopEnterTransition() },
+                    popExitTransition = { slidePopExitTransition() }
                 ) {
                     DesignSystemScreen(
                         onBackClick = { navController.popBackStack() }
@@ -609,42 +420,10 @@ fun App(
                 composable(
                     route = Screen.CreatePost.route,
                     arguments = listOf(navArgument("sectionId") { type = NavType.IntType }),
-                    enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickSpringEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 250,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { slideEnterTransition() },
+                    exitTransition = { slideExitTransition() },
+                    popEnterTransition = { slidePopEnterTransition() },
+                    popExitTransition = { slidePopExitTransition() }
                 ) { backStackEntry ->
                     val sectionId = backStackEntry.arguments?.getInt("sectionId") ?: 1
                     CreatePostScreen(
@@ -662,38 +441,10 @@ fun App(
                 // 编辑个人资料页面 - 使用淡入淡出避免与共享元素冲突
                 composable(
                     route = Screen.EditProfile.route,
-                    enterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 200,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        fadeOut(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { fadeEnterTransition() },
+                    exitTransition = { fadeExitTransition() },
+                    popEnterTransition = { fadePopEnterTransition() },
+                    popExitTransition = { fadePopExitTransition() }
                 ) {
                     EditProfileScreen(
                         onBackClick = { navController.popBackStack() },
@@ -706,42 +457,10 @@ fun App(
                 // 帖子管理页面
                 composable(
                     route = Screen.PostManagement.route,
-                    enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickSpringEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 250,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { slideEnterTransition() },
+                    exitTransition = { slideExitTransition() },
+                    popEnterTransition = { slidePopEnterTransition() },
+                    popExitTransition = { slidePopExitTransition() }
                 ) {
                     PostManagementScreen(
                         onBackClick = { navController.popBackStack() },
@@ -754,42 +473,10 @@ fun App(
                 // 搜索页（提升到根导航图）
                 composable(
                     route = Screen.Search.route,
-                    enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickSpringEasing
-                            )
-                        )
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { -it / 3 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = QuickEasing
-                            )
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(
-                                durationMillis = 250,
-                                easing = QuickEasing
-                            )
-                        )
-                    }
+                    enterTransition = { slideEnterTransition() },
+                    exitTransition = { slideExitTransition() },
+                    popEnterTransition = { slidePopEnterTransition() },
+                    popExitTransition = { slidePopExitTransition() }
                 ) {
                     SearchScreen(
                         onBackClick = { navController.popBackStack() },

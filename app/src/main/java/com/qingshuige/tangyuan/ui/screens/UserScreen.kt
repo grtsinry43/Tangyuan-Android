@@ -170,7 +170,7 @@ private fun UserInfoCard(
             // 头像和编辑按钮
             Box {
                 AsyncImage(
-                    model = "${TangyuanApplication.instance.bizDomain}images/${user.avatarGuid}.jpg",
+                    model = "${TangyuanApplication.BIZ_DOMAIN}images/${user.avatarGuid}.jpg",
                     contentDescription = "用户头像",
                     modifier = Modifier
                         .size(120.dp)

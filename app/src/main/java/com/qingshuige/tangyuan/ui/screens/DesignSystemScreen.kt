@@ -20,8 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.qingshuige.tangyuan.ui.components.AnimatedSecondaryTopBar
 import com.qingshuige.tangyuan.ui.theme.*
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import kotlinx.coroutines.delay
@@ -69,8 +68,10 @@ fun DesignSystemScreen(
     val scrollState = rememberScrollState()
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            AnimatedSecondaryTopBar(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 title = {
                     Text(
                         text = "Tangyuan Design System",
@@ -98,9 +99,6 @@ fun DesignSystemScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
                 modifier = Modifier.fillMaxWidth()
             )
         }

@@ -48,8 +48,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,6 +70,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.TangyuanApplication
+import com.qingshuige.tangyuan.ui.components.AnimatedSecondaryTopBar
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.viewmodel.EditProfileViewModel
 
@@ -143,8 +142,10 @@ fun EditProfileScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            AnimatedSecondaryTopBar(
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = {
                     Text(
                         text = "编辑个人资料",
@@ -178,10 +179,7 @@ fun EditProfileScreen(
                             Text("保存")
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { innerPadding ->
@@ -201,7 +199,7 @@ fun EditProfileScreen(
                 // 头像编辑区域
                 AvatarEditSection(
                     avatarUrl = uiState.currentUser?.let {
-                        "${TangyuanApplication.instance.bizDomain}images/${it.avatarGuid}.jpg"
+                        "${TangyuanApplication.BIZ_DOMAIN}images/${it.avatarGuid}.jpg"
                     },
                     newAvatarGuid = uiState.newAvatarGuid,
                     isUploading = uiState.isUploadingAvatar,
@@ -298,7 +296,7 @@ private fun AvatarEditSection(
         Box {
             // 显示新头像或当前头像
             val displayUrl = newAvatarGuid?.let {
-                "${TangyuanApplication.instance.bizDomain}images/$it.jpg"
+                "${TangyuanApplication.BIZ_DOMAIN}images/$it.jpg"
             } ?: avatarUrl
 
             AsyncImage(

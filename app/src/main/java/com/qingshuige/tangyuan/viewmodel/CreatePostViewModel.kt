@@ -6,14 +6,19 @@ import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
 import com.qingshuige.tangyuan.analytics.OpenPanelClient
 import com.qingshuige.tangyuan.model.Category
 import com.qingshuige.tangyuan.model.CreatePostDto
+import com.qingshuige.tangyuan.model.CreatePostDraft
 import com.qingshuige.tangyuan.model.CreatePostState
 import com.qingshuige.tangyuan.network.TokenManager
 import com.qingshuige.tangyuan.repository.CreatePostRepository
 import com.qingshuige.tangyuan.repository.MediaRepository
+import com.qingshuige.tangyuan.utils.PrefsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,13 +34,15 @@ import javax.inject.Inject
 @HiltViewModel
 class CreatePostViewModel @Inject constructor(
     private val createPostRepository: CreatePostRepository,
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
-
-    private val tokenManager = TokenManager()
 
     private val _uiState = MutableStateFlow(CreatePostState())
     val uiState: StateFlow<CreatePostState> = _uiState.asStateFlow()
+    private val gson = Gson()
+    private var draftSaveJob: Job? = null
+    private var draftInitialized = false
 
     init {
         loadCategories()
@@ -64,12 +71,23 @@ class CreatePostViewModel @Inject constructor(
                     }
                 }
                 .collect { categories ->
+                    val currentCategoryId = _uiState.value.selectedCategoryId
                     _uiState.value = _uiState.value.copy(
                         isLoadingCategories = false,
                         categories = categories,
-                        selectedCategoryId = categories.firstOrNull()?.categoryId
+                        selectedCategoryId = categories.firstOrNull { it.categoryId == currentCategoryId }?.categoryId
+                            ?: currentCategoryId
+                            ?: categories.firstOrNull()?.categoryId
                     )
                 }
+        }
+    }
+
+    fun initializeDraft(initialSectionId: Int? = null) {
+        if (draftInitialized) return
+        draftInitialized = true
+        viewModelScope.launch {
+            restoreDraft(initialSectionId ?: _uiState.value.selectedSectionId)
         }
     }
 
@@ -78,6 +96,7 @@ class CreatePostViewModel @Inject constructor(
      */
     fun updateContent(content: String) {
         _uiState.value = _uiState.value.copy(content = content)
+        scheduleDraftSave()
     }
 
     /**
@@ -85,13 +104,18 @@ class CreatePostViewModel @Inject constructor(
      */
     fun selectCategory(categoryId: Int) {
         _uiState.value = _uiState.value.copy(selectedCategoryId = categoryId)
+        scheduleDraftSave()
     }
 
     /**
      * 选择分区 (0: 聊一聊, 1: 侃一侃)
      */
     fun selectSection(sectionId: Int) {
-        _uiState.value = _uiState.value.copy(selectedSectionId = sectionId)
+        if (sectionId == _uiState.value.selectedSectionId) return
+        viewModelScope.launch {
+            persistDraftNow()
+            restoreDraft(sectionId)
+        }
     }
 
     /**
@@ -104,6 +128,7 @@ class CreatePostViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 selectedImageUris = currentImages + uri
             )
+            scheduleDraftSave()
         }
         Log.d("CreatePostViewModel", "Updated image URIs: ${_uiState.value.selectedImageUris}")
     }
@@ -124,6 +149,7 @@ class CreatePostViewModel @Inject constructor(
                 selectedImageUris = currentImages,
                 uploadedImageUUIDs = currentUUIDs
             )
+            scheduleDraftSave()
         }
     }
 
@@ -137,6 +163,7 @@ class CreatePostViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 selectedImageUris = updatedImages
             )
+            scheduleDraftSave()
             Log.d("CreatePostViewModel", "Updated image URIs: $updatedImages")
 
             // 2. 使用刚刚更新的列表来获取正确的索引
@@ -212,6 +239,7 @@ class CreatePostViewModel @Inject constructor(
                                 uploadedImageUUIDs = currentUUIDs,
                                 uploadProgress = _uiState.value.uploadProgress + (uri.toString() to 1f)
                             )
+                            scheduleDraftSave()
                         }
 
                         // 检查是否所有图片都上传完成
@@ -296,6 +324,9 @@ class CreatePostViewModel @Inject constructor(
                         isLoading = false,
                         success = true
                     )
+                    viewModelScope.launch {
+                        clearCurrentDraft()
+                    }
 
                     // 追踪发帖成功
                     try {
@@ -340,6 +371,7 @@ class CreatePostViewModel @Inject constructor(
      * 重置状态
      */
     fun resetState() {
+        draftSaveJob?.cancel()
         _uiState.value = CreatePostState(categories = _uiState.value.categories)
     }
 
@@ -348,6 +380,95 @@ class CreatePostViewModel @Inject constructor(
      */
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun clearDraftStatus() {
+        _uiState.value = _uiState.value.copy(draftStatus = null)
+    }
+
+    fun clearDraft() {
+        viewModelScope.launch {
+            clearCurrentDraft()
+            val categories = _uiState.value.categories
+            _uiState.value = CreatePostState(
+                categories = categories,
+                selectedSectionId = _uiState.value.selectedSectionId,
+                selectedCategoryId = categories.firstOrNull()?.categoryId,
+                draftStatus = "草稿已清空"
+            )
+        }
+    }
+
+    private fun scheduleDraftSave() {
+        draftSaveJob?.cancel()
+        draftSaveJob = viewModelScope.launch {
+            delay(500)
+            persistDraftNow()
+        }
+    }
+
+    private suspend fun restoreDraft(sectionId: Int) {
+        val categories = _uiState.value.categories
+        val draft = loadDraft(sectionId)
+        _uiState.value = if (draft != null) {
+            _uiState.value.copy(
+                content = draft.content,
+                selectedCategoryId = draft.selectedCategoryId ?: categories.firstOrNull()?.categoryId,
+                selectedSectionId = draft.selectedSectionId,
+                selectedImageUris = draft.selectedImageUris,
+                uploadedImageUUIDs = draft.uploadedImageUUIDs,
+                uploadProgress = emptyMap(),
+                isUploading = false,
+                draftStatus = "已恢复草稿"
+            )
+        } else {
+            _uiState.value.copy(
+                content = "",
+                selectedCategoryId = categories.firstOrNull()?.categoryId,
+                selectedSectionId = sectionId,
+                selectedImageUris = emptyList(),
+                uploadedImageUUIDs = emptyList(),
+                uploadProgress = emptyMap(),
+                isUploading = false,
+                draftStatus = null
+            )
+        }
+    }
+
+    private suspend fun loadDraft(sectionId: Int): CreatePostDraft? {
+        val raw = PrefsManager.getString(draftKey(sectionId))
+        if (raw.isBlank()) return null
+        return runCatching {
+            gson.fromJson(raw, CreatePostDraft::class.java)
+        }.getOrNull()
+    }
+
+    private suspend fun persistDraftNow() {
+        val state = _uiState.value
+        val key = draftKey(state.selectedSectionId)
+        if (!state.hasDraftContent) {
+            PrefsManager.remove(key)
+            return
+        }
+
+        val draft = CreatePostDraft(
+            content = state.content,
+            selectedCategoryId = state.selectedCategoryId,
+            selectedSectionId = state.selectedSectionId,
+            selectedImageUris = state.selectedImageUris,
+            uploadedImageUUIDs = state.uploadedImageUUIDs
+        )
+        PrefsManager.putString(key, gson.toJson(draft))
+    }
+
+    private suspend fun clearCurrentDraft() {
+        draftSaveJob?.cancel()
+        PrefsManager.remove(draftKey(_uiState.value.selectedSectionId))
+    }
+
+    private fun draftKey(sectionId: Int): String {
+        val userId = tokenManager.getUserIdFromToken() ?: 0
+        return "${PrefsManager.Keys.CREATE_POST_DRAFT_PREFIX}_${userId}_$sectionId"
     }
 
     /**

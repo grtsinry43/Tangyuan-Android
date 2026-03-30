@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import com.qingshuige.tangyuan.ui.components.ShimmerAsyncImage
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanTypography
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.UserDetailViewModel
 
@@ -87,14 +89,6 @@ fun UserDetailScreen(
         }
     }
 
-    // 错误提示
-    errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            // TODO: 显示错误提示
-            viewModel.clearError()
-        }
-    }
-
     Scaffold(
         topBar = {
             UserDetailTopBar(
@@ -121,6 +115,19 @@ fun UserDetailScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
+                if (!isLoading && user == null && errorMessage != null) {
+                    item {
+                        UserLoadErrorState(
+                            message = errorMessage!!,
+                            onRetry = {
+                                viewModel.clearError()
+                                viewModel.loadUserDetails(userId)
+                            }
+                        )
+                    }
+                    return@LazyColumn
+                }
+
                 // 用户信息区域
                 item {
                     if (isLoading) {
@@ -324,7 +331,7 @@ private fun UserProfileSection(
         ) {
             // 左侧头像 - 支持共享元素动画
             ShimmerAsyncImage(
-                imageUrl = "${TangyuanApplication.instance.bizDomain}images/${user.avatarGuid}.jpg",
+                imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${user.avatarGuid}.jpg",
                 contentDescription = "${user.nickName}的头像",
                 modifier = Modifier
                     .size(80.dp)
@@ -637,6 +644,59 @@ private fun EmptyPostsState() {
             fontFamily = LiteraryFontFamily,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
         )
+    }
+}
+
+/**
+ * 用户加载失败状态
+ */
+@Composable
+private fun UserLoadErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    val caption = remember(message) { ErrorMapper.toLiteraryCaption(message) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 360.dp)
+            .padding(horizontal = 24.dp, vertical = 48.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
+                fontFamily = TangyuanGeneralFontFamily,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = LiteraryFontFamily,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center
+            )
+            TextButton(onClick = onRetry) {
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "重试",
+                    fontFamily = TangyuanGeneralFontFamily,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
 

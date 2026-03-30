@@ -42,14 +42,14 @@ data class EditProfileUiState(
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditProfileUiState())
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
     private var originalUser: User? = null
-    private val tokenManager = TokenManager()
 
     init {
         // 初始化时加载当前用户信息
@@ -184,7 +184,7 @@ class EditProfileViewModel @Inject constructor(
                     isoRegionName = currentState.region,
                     bio = currentState.bio,
                     avatarGuid = currentState.newAvatarGuid ?: user.avatarGuid,
-                    password = TokenManager().password
+                    password = tokenManager.password
                 )
 
                 userRepository.updateUser(user.userId, updatedUser)

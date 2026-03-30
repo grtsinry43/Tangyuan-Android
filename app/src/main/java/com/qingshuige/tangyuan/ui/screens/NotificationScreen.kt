@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
@@ -28,11 +30,13 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -54,6 +58,7 @@ import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.NotificationViewModel
+import com.qingshuige.tangyuan.viewmodel.NotificationCategory
 import com.qingshuige.tangyuan.viewmodel.NotificationWithUserAndComment
 import com.qingshuige.tangyuan.viewmodel.UserViewModel
 import java.text.SimpleDateFormat
@@ -109,31 +114,31 @@ fun NotificationScreen(
                 }
 
                 else -> {
-                    NotificationList(
-                        notificationsWithData = uiState.notificationsWithData,
+                    val filteredNotifications = uiState.notificationsWithData.filter {
+                        uiState.selectedCategory.matches(it)
+                    }
+
+                    NotificationListContent(
+                        allNotifications = uiState.notificationsWithData,
+                        selectedCategory = uiState.selectedCategory,
+                        filteredNotifications = filteredNotifications,
+                        unreadCount = uiState.unreadCount,
+                        isMarkingAsRead = uiState.isMarkingAsRead,
+                        onCategorySelected = notificationViewModel::selectCategory,
+                        onMarkAllAsRead = notificationViewModel::markAllAsRead,
                         onNotificationClick = { item ->
-                            // 标记为已读
                             if (!item.notification.isRead) {
                                 notificationViewModel.markAsRead(item.notification.notificationId)
                             }
-                            // 根据通知类型跳转到相应页面
                             when (item.notification.sourceType) {
-                                "comment", "reply" -> {
-                                    // 跳转到帖子详情
-                                    item.postId?.let { postId ->
-                                        onNotificationClick(postId, "post")
-                                    }
-                                }
-                                "like" -> {
-                                    // 跳转到帖子详情
+                                "comment", "reply", "like" -> {
                                     item.postId?.let { postId ->
                                         onNotificationClick(postId, "post")
                                     }
                                 }
                                 "follow" -> {
-                                    // 跳转到用户详情
-                                    item.user?.userId?.let { userId ->
-                                        onNotificationClick(userId, "user")
+                                    item.user?.userId?.let { clickedUserId ->
+                                        onNotificationClick(clickedUserId, "user")
                                     }
                                 }
                                 else -> { /* 忽略未知类型 */ }
@@ -181,6 +186,17 @@ private fun LoadingContent() {
 
 @Composable
 private fun EmptyNotificationsContent() {
+    EmptyNotificationsContent(
+        title = "暂无消息".withPanguSpacing(),
+        subtitle = "有新的互动时，会在这里等你"
+    )
+}
+
+@Composable
+private fun EmptyNotificationsContent(
+    title: String,
+    subtitle: String
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -199,11 +215,148 @@ private fun EmptyNotificationsContent() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "暂无消息".withPanguSpacing(),
+                text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontFamily = TangyuanGeneralFontFamily,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = TangyuanGeneralFontFamily,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotificationListContent(
+    allNotifications: List<NotificationWithUserAndComment>,
+    selectedCategory: NotificationCategory,
+    filteredNotifications: List<NotificationWithUserAndComment>,
+    unreadCount: Int,
+    isMarkingAsRead: Boolean,
+    onCategorySelected: (NotificationCategory) -> Unit,
+    onMarkAllAsRead: () -> Unit,
+    onNotificationClick: (NotificationWithUserAndComment) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        NotificationCategoryRow(
+            allNotifications = allNotifications,
+            selectedCategory = selectedCategory,
+            unreadCount = unreadCount,
+            isMarkingAsRead = isMarkingAsRead,
+            onCategorySelected = onCategorySelected,
+            onMarkAllAsRead = onMarkAllAsRead
+        )
+
+        if (filteredNotifications.isEmpty()) {
+            EmptyNotificationsContent(
+                title = "这一类还没有消息",
+                subtitle = "换个分类看看，或者稍后再来"
+            )
+        } else if (selectedCategory == NotificationCategory.ALL) {
+            NotificationSectionList(
+                notificationsWithData = filteredNotifications,
+                onNotificationClick = onNotificationClick
+            )
+        } else {
+            NotificationList(
+                notificationsWithData = filteredNotifications,
+                onNotificationClick = onNotificationClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotificationCategoryRow(
+    allNotifications: List<NotificationWithUserAndComment>,
+    selectedCategory: NotificationCategory,
+    unreadCount: Int,
+    isMarkingAsRead: Boolean,
+    onCategorySelected: (NotificationCategory) -> Unit,
+    onMarkAllAsRead: () -> Unit
+) {
+    val scrollState = rememberScrollState()
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            NotificationCategory.entries.forEach { category ->
+                val count = if (category == NotificationCategory.ALL) {
+                    allNotifications.size
+                } else {
+                    allNotifications.count { category.matches(it) }
+                }
+                FilterChip(
+                    selected = selectedCategory == category,
+                    onClick = { onCategorySelected(category) },
+                    label = { Text("${category.label} $count") }
+                )
+            }
+        }
+
+        if (unreadCount > 0) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(
+                    onClick = onMarkAllAsRead,
+                    enabled = !isMarkingAsRead
+                ) {
+                    Text(if (isMarkingAsRead) "处理中..." else "全部标为已读")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationSectionList(
+    notificationsWithData: List<NotificationWithUserAndComment>,
+    onNotificationClick: (NotificationWithUserAndComment) -> Unit
+) {
+    val sections = listOf(
+        "评论" to notificationsWithData.filter { NotificationCategory.COMMENT.matches(it) },
+        "回复" to notificationsWithData.filter { NotificationCategory.REPLY.matches(it) },
+        "赞与关注" to notificationsWithData.filter { NotificationCategory.SOCIAL.matches(it) },
+        "其他" to notificationsWithData.filter { NotificationCategory.OTHER.matches(it) }
+    ).filter { it.second.isNotEmpty() }
+
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        sections.forEach { (title, items) ->
+            item(key = "header_$title") {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontFamily = TangyuanGeneralFontFamily,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            items(
+                items = items,
+                key = { it.notification.notificationId }
+            ) { item ->
+                NotificationItem(
+                    item = item,
+                    onClick = { onNotificationClick(item) }
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
+            }
         }
     }
 }
@@ -271,7 +424,7 @@ private fun NotificationItem(
         // 用户头像
         Box {
             AsyncImage(
-                model = user?.let { "${TangyuanApplication.instance.bizDomain}images/${it.avatarGuid}.jpg" },
+                model = user?.let { "${TangyuanApplication.BIZ_DOMAIN}images/${it.avatarGuid}.jpg" },
                 contentDescription = "用户头像",
                 modifier = Modifier
                     .size(48.dp)

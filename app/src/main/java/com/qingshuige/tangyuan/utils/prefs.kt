@@ -7,7 +7,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "tangyuan_prefs")
 
@@ -15,6 +14,7 @@ object PrefsManager {
     object Keys {
         const val APP_THEME_MODE = "app_theme_mode"
         const val APP_THEME_USER_OVERRIDDEN = "app_theme_user_overridden"
+        const val CREATE_POST_DRAFT_PREFIX = "create_post_draft"
     }
 
     private lateinit var dataStore: DataStore<Preferences>
@@ -128,20 +128,4 @@ object PrefsManager {
         }
     }
 
-    // 同步版本（不推荐，但为了兼容性保留）
-    fun getStringSync(key: String, defaultValue: String = ""): String = runBlocking {
-        getString(key, defaultValue)
-    }
-
-    fun getIntSync(key: String, defaultValue: Int = 0): Int = runBlocking {
-        getInt(key, defaultValue)
-    }
-
-    fun getBooleanSync(key: String, defaultValue: Boolean = false): Boolean = runBlocking {
-        getBoolean(key, defaultValue)
-    }
-
-    fun getLongSync(key: String, defaultValue: Long = 0L): Long = runBlocking {
-        getLong(key, defaultValue)
-    }
 }

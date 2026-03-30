@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.model.Category
+import com.qingshuige.tangyuan.ui.components.AnimatedSecondaryTopBar
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.utils.UIUtils
 import com.qingshuige.tangyuan.viewmodel.CreatePostViewModel
@@ -105,7 +106,14 @@ fun CreatePostScreen(
     }
 
     LaunchedEffect(sectionId) {
-        sectionId?.let { viewModel.selectSection(it) }
+        viewModel.initializeDraft(sectionId)
+    }
+
+    LaunchedEffect(uiState.draftStatus) {
+        uiState.draftStatus?.let {
+            UIUtils.showSuccess(it)
+            viewModel.clearDraftStatus()
+        }
     }
 
     // 显示错误提示
@@ -163,8 +171,10 @@ fun CreatePostScreen(
 
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            AnimatedSecondaryTopBar(
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = {
                     Text(
                         text = "发布动态",
@@ -181,6 +191,14 @@ fun CreatePostScreen(
                     }
                 },
                 actions = {
+                    if (uiState.hasDraftContent && !uiState.isLoading) {
+                        TextButton(
+                            onClick = { viewModel.clearDraft() },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text("清空")
+                        }
+                    }
                     Button(
                         onClick = { viewModel.createPost() },
                         enabled = uiState.canPost,
@@ -197,10 +215,7 @@ fun CreatePostScreen(
                             Text("发布")
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { paddingValues ->

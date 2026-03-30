@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import com.qingshuige.tangyuan.viewmodel.TopicViewModel
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -166,6 +168,8 @@ private fun ErrorContent(
     message: String,
     onRetry: () -> Unit
 ) {
+    val caption = remember(message) { ErrorMapper.toLiteraryCaption(message) }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -176,36 +180,33 @@ private fun ErrorContent(
             modifier = Modifier.padding(32.dp)
         ) {
             Text(
-                text = "加载失败",
-                style = MaterialTheme.typography.headlineSmall,
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
                 fontFamily = LiteraryFontFamily,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.SemiBold
             )
 
             Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
                 fontFamily = LiteraryFontFamily,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center
             )
 
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary
-                )
-            ) {
+            TextButton(onClick = onRetry) {
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.tertiary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "重试",
-                    fontFamily = LiteraryFontFamily
+                    fontFamily = LiteraryFontFamily,
+                    color = MaterialTheme.colorScheme.tertiary
                 )
             }
         }

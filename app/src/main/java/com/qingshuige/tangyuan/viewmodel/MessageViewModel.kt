@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 全局消息管理ViewModel
@@ -65,8 +64,7 @@ class MessageViewModel @Inject constructor() : ViewModel() {
  * 全局消息管理器单例
  * 提供在非Composable上下文中使用的静态方法
  */
-@Singleton
-class GlobalMessageManager @Inject constructor() {
+class GlobalMessageManager private constructor() {
 
     private var viewModel: MessageViewModel? = null
 

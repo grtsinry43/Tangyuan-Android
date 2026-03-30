@@ -13,10 +13,13 @@ import com.qingshuige.tangyuan.repository.PostRepository
 import com.qingshuige.tangyuan.repository.UserRepository
 import com.qingshuige.tangyuan.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,7 +43,8 @@ data class PostUiState(
 class PostViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
     
     private val _postUiState = MutableStateFlow(PostUiState())
@@ -56,43 +60,25 @@ class PostViewModel @Inject constructor(
         viewModelScope.launch {
             _postUiState.value = _postUiState.value.copy(isLoading = true, error = null)
             try {
-                var metadata: PostMetadata? = null
-                var body: PostBody? = null
-                var author: User? = null
-                var category: Category? = null
-                
-                postRepository.getPostMetadata(postId)
-                    .catch { e -> throw e }
-                    .collect { postMetadata ->
-                        metadata = postMetadata
-                        
-                        // Get post body
-                        postRepository.getPostBody(postId)
-                            .catch { e -> throw e }
-                            .collect { postBody ->
-                                body = postBody
-                            }
-                        
-                        // Get author
-                        userRepository.getUserById(postMetadata.userId)
-                            .catch { e -> throw e }
-                            .collect { user ->
-                                author = user
-                            }
-                        
-                        // Get category
-                        categoryRepository.getCategoryById(postMetadata.categoryId)
-                            .catch { e -> throw e }
-                            .collect { cat ->
-                                category = cat
-                            }
-                        
-                        val postDetail = PostDetail(metadata!!, body!!, author, category)
-                        _postUiState.value = _postUiState.value.copy(
-                            isLoading = false,
-                            currentPost = postDetail
-                        )
-                    }
+                coroutineScope {
+                    val metadataDeferred = async { postRepository.getPostMetadata(postId).first() }
+                    val bodyDeferred = async { postRepository.getPostBody(postId).first() }
+
+                    val metadata = metadataDeferred.await()
+                    val body = bodyDeferred.await()
+
+                    val authorDeferred = async { userRepository.getUserById(metadata.userId).first() }
+                    val categoryDeferred = async { categoryRepository.getCategoryById(metadata.categoryId).first() }
+
+                    val author = try { authorDeferred.await() } catch (_: Exception) { null }
+                    val category = try { categoryDeferred.await() } catch (_: Exception) { null }
+
+                    val postDetail = PostDetail(metadata, body, author, category)
+                    _postUiState.value = _postUiState.value.copy(
+                        isLoading = false,
+                        currentPost = postDetail
+                    )
+                }
             } catch (e: Exception) {
                 _postUiState.value = _postUiState.value.copy(
                     isLoading = false,
@@ -163,26 +149,16 @@ class PostViewModel @Inject constructor(
         viewModelScope.launch {
             _postUiState.value = _postUiState.value.copy(isCreating = true, error = null)
             try {
-                var postId: Int? = null
-                
-                postRepository.createPostMetadata(metadata)
-                    .catch { e -> throw e }
-                    .collect { id ->
-                        postId = id
-                        
-                        postRepository.createPostBody(body.copy(postId = id))
-                            .catch { e -> throw e }
-                            .collect { success ->
-                                if (success) {
-                                    _postUiState.value = _postUiState.value.copy(
-                                        isCreating = false,
-                                        createSuccess = true
-                                    )
-                                } else {
-                                    throw Exception("Failed to create post body")
-                                }
-                            }
-                    }
+                val postId = postRepository.createPostMetadata(metadata).first()
+                val success = postRepository.createPostBody(body.copy(postId = postId)).first()
+                if (success) {
+                    _postUiState.value = _postUiState.value.copy(
+                        isCreating = false,
+                        createSuccess = true
+                    )
+                } else {
+                    throw Exception("Failed to create post body")
+                }
             } catch (e: Exception) {
                 _postUiState.value = _postUiState.value.copy(
                     isCreating = false,
@@ -232,7 +208,6 @@ class PostViewModel @Inject constructor(
                 _postUiState.value = _postUiState.value.copy(error = e.message)
                 // 追踪失败
                 try {
-                    val tokenManager = TokenManager()
                     val userId = tokenManager.getUserIdFromToken()?.toString()
                     OpenPanelClient.getInstance().track("get_notice_fail", mapOf(
                         "error" to (e.message ?: "unknown")

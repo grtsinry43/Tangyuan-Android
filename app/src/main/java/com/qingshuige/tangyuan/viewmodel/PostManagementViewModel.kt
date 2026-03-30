@@ -26,13 +26,12 @@ data class PostManagementUiState(
 
 @HiltViewModel
 class PostManagementViewModel @Inject constructor(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PostManagementUiState())
     val uiState: StateFlow<PostManagementUiState> = _uiState.asStateFlow()
-
-    private val tokenManager = TokenManager()
 
     init {
         loadUserPosts()

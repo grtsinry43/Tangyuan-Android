@@ -41,7 +41,8 @@ data class CategoryUiState(
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
     
     private val _categoryUiState = MutableStateFlow(CategoryUiState())
@@ -228,7 +229,6 @@ class CategoryViewModel @Inject constructor(
                 )
                 // 追踪失败
                 try {
-                    val tokenManager = TokenManager()
                     val userId = tokenManager.getUserIdFromToken()?.toString()
                     OpenPanelClient.getInstance().track("load_category_fail", mapOf(
                         "category_id" to categoryId,
@@ -274,7 +274,6 @@ class CategoryViewModel @Inject constructor(
             } catch (e: Exception) {
                 // 追踪失败
                 try {
-                    val tokenManager = TokenManager()
                     val userId = tokenManager.getUserIdFromToken()?.toString()
                     OpenPanelClient.getInstance().track(
                         "category_load_more_fail", mapOf(

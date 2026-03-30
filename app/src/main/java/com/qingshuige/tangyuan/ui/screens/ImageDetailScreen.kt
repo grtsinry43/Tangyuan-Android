@@ -42,6 +42,7 @@ import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.model.PostCard
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
+import com.qingshuige.tangyuan.utils.ErrorMapper
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.PostDetailViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -102,7 +103,7 @@ fun ImageDetailScreen(
                     totalCount = imageUUIDs.size,
                     onSaveClick = {
                         val currentImageUrl =
-                            "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[pagerState.currentPage]}.jpg"
+                            "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[pagerState.currentPage]}.jpg"
                         viewModel.saveCurrentImage(currentImageUrl)
                     }
                 )
@@ -175,7 +176,7 @@ private fun BackgroundBlurredImage(
     if (imageUUIDs.isNotEmpty() && currentPage < imageUUIDs.size) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data("${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[currentPage]}.jpg")
+                .data("${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[currentPage]}.jpg")
                 .crossfade(true)
                 .build(),
             contentDescription = null,
@@ -267,7 +268,7 @@ private fun ImagePager(
         userScrollEnabled = canScroll // ✅ 当缩放时禁用Pager滑动
     ) { page ->
         ZoomableImage(
-            imageUrl = "${TangyuanApplication.instance.bizDomain}images/${imageUUIDs[page]}.jpg",
+            imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[page]}.jpg",
             postId = postId,
             imageIndex = page,
             contentDescription = "图片 ${page + 1}",
@@ -509,7 +510,7 @@ private fun PostAuthorInfo(
     ) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data("${TangyuanApplication.instance.bizDomain}images/${postCard.authorAvatar}.jpg")
+                .data("${TangyuanApplication.BIZ_DOMAIN}images/${postCard.authorAvatar}.jpg")
                 .crossfade(true)
                 .build(),
             contentDescription = "${postCard.authorName}的头像",
@@ -601,6 +602,8 @@ private fun ErrorContent(
     message: String,
     onRetry: () -> Unit
 ) {
+    val caption = remember(message) { ErrorMapper.toLiteraryCaption(message) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -610,34 +613,25 @@ private fun ErrorContent(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.ErrorOutline,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(48.dp)
-            )
             Text(
-                text = "加载失败",
-                style = MaterialTheme.typography.headlineSmall,
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
                 fontFamily = LiteraryFontFamily,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
                 fontFamily = LiteraryFontFamily,
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
             )
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.2f)
-                )
-            ) {
+            TextButton(onClick = onRetry) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
