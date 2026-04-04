@@ -23,9 +23,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -93,43 +92,32 @@ fun ImageDetailScreen(
                 imageUUIDs = imageUUIDs,
                 currentPage = pagerState.currentPage
             )
-            
-            // 主要内容
-            Column(modifier = Modifier.fillMaxSize()) {
-                // 顶部导航栏
-                ImageDetailTopBar(
-                    onBackClick = onBackClick,
-                    currentIndex = pagerState.currentPage + 1,
-                    totalCount = imageUUIDs.size,
-                    onSaveClick = {
-                        val currentImageUrl =
-                            "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[pagerState.currentPage]}.jpg"
-                        viewModel.saveCurrentImage(currentImageUrl)
-                    }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // 图片轮播区域
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (imageUUIDs.isNotEmpty()) {
-                        ImagePager(
-                            imageUUIDs = imageUUIDs,
-                            postId = postCard.postId,
-                            pagerState = pagerState,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope
-                        )
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // 底部内容区域（模糊遮罩）
+            // 图片全屏铺满
+            if (imageUUIDs.isNotEmpty()) {
+                ImagePager(
+                    imageUUIDs = imageUUIDs,
+                    postId = postCard.postId,
+                    pagerState = pagerState,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope
+                )
+            }
+
+            // 顶部导航栏（浮在图片上方）
+            ImageDetailTopBar(
+                onBackClick = onBackClick,
+                currentIndex = pagerState.currentPage + 1,
+                totalCount = imageUUIDs.size,
+                onSaveClick = {
+                    val currentImageUrl =
+                        "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[pagerState.currentPage]}.jpg"
+                    viewModel.saveCurrentImage(currentImageUrl)
+                }
+            )
+
+            // 底部内容区域（浮在图片下方，不挤压图片空间）
+            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 BottomContentOverlay(
                     postCard = postCard,
                     onAuthorClick = onAuthorClick,
@@ -139,6 +127,7 @@ fun ImageDetailScreen(
                     animatedContentScope = animatedContentScope
                 )
             }
+
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
@@ -259,72 +248,142 @@ private fun ImagePager(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null
 ) {
-    // 用于控制Pager是否允许左右滑动
-    var canScroll by remember { mutableStateOf(true) }
-
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
-        userScrollEnabled = canScroll // ✅ 当缩放时禁用Pager滑动
+        // 不再手动控制 userScrollEnabled —— 由 ZoomableImage 的手势选择性消费来决定
     ) { page ->
         ZoomableImage(
             imageUrl = "${TangyuanApplication.BIZ_DOMAIN}images/${imageUUIDs[page]}.jpg",
             postId = postId,
             imageIndex = page,
+            isCurrentPage = pagerState.settledPage == page,
             contentDescription = "图片 ${page + 1}",
             sharedTransitionScope = sharedTransitionScope,
-            animatedContentScope = animatedContentScope,
-            onScaleChanged = { newScale ->
-                canScroll = newScale <= 1.01f // 缩放>1时禁用pager滑动
-            }
+            animatedContentScope = animatedContentScope
         )
     }
 }
 
+/**
+ * 可缩放图片组件
+ *
+ * 核心逻辑：使用 awaitEachGesture 手动处理手势，选择性消费事件：
+ * - 未缩放时：不消费手势，让 HorizontalPager 处理左右滑动
+ * - 缩放中（双指）：消费手势，处理缩放和平移
+ * - 已缩放单指拖动：消费手势处理平移，但在水平边界处放行给 HorizontalPager
+ */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ZoomableImage(
     imageUrl: String,
     postId: Int,
     imageIndex: Int,
+    isCurrentPage: Boolean,
     contentDescription: String,
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null,
-    onScaleChanged: (Float) -> Unit = {}
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+
+    // 切换页面时重置缩放
+    LaunchedEffect(isCurrentPage) {
+        if (!isCurrentPage) {
+            scale = 1f
+            offset = Offset.Zero
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // ✅ 缩放 & 平移逻辑
+            .onSizeChanged { containerSize = it }
+            // 缩放 & 平移：使用自定义手势处理，选择性消费事件
             .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    val newScale = (scale * zoom).coerceIn(1f, 5f)
-                    val maxX = (newScale - 1f) * 400f
-                    val maxY = (newScale - 1f) * 400f
-                    val newOffset = Offset(
-                        x = (offset.x + pan.x).coerceIn(-maxX, maxX),
-                        y = (offset.y + pan.y).coerceIn(-maxY, maxY)
-                    )
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    do {
+                        val event = awaitPointerEvent()
+                        val canceled = event.changes.any { it.isConsumed }
+                        if (canceled) break
 
-                    scale = newScale
-                    offset = newOffset
-                    onScaleChanged(newScale)
+                        val zoomChange = event.calculateZoom()
+                        val panChange = event.calculatePan()
+                        val pointerCount = event.changes.count { it.pressed }
+
+                        // 根据容器实际尺寸计算平移边界
+                        val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                        val maxX = ((newScale - 1f) * containerSize.width / 2f)
+                            .coerceAtLeast(0f)
+                        val maxY = ((newScale - 1f) * containerSize.height / 2f)
+                            .coerceAtLeast(0f)
+
+                        val proposedOffset = Offset(
+                            x = (offset.x + panChange.x).coerceIn(-maxX, maxX),
+                            y = (offset.y + panChange.y).coerceIn(-maxY, maxY)
+                        )
+
+                        when {
+                            // 双指操作：始终消费（缩放+平移）
+                            pointerCount >= 2 -> {
+                                scale = newScale
+                                offset = proposedOffset
+                                event.changes.forEach { if (it.positionChanged()) it.consume() }
+                            }
+                            // 单指 + 已缩放：处理平移，边界处放行给 Pager
+                            pointerCount == 1 && scale > 1.01f -> {
+                                val atLeftEdge = offset.x >= maxX - 0.5f
+                                val atRightEdge = offset.x <= -maxX + 0.5f
+                                val isHorizontalSwipe =
+                                    kotlin.math.abs(panChange.x) > kotlin.math.abs(panChange.y) * 1.5f
+
+                                val shouldPassThrough = isHorizontalSwipe && (
+                                    (atLeftEdge && panChange.x > 0) ||
+                                    (atRightEdge && panChange.x < 0)
+                                )
+
+                                if (!shouldPassThrough) {
+                                    offset = proposedOffset
+                                    event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                }
+                                // shouldPassThrough 时不消费，HorizontalPager 自动接管
+                            }
+                            // 单指 + 未缩放：不消费，让 HorizontalPager 处理滑动
+                        }
+                    } while (event.changes.any { it.pressed })
+
+                    // 手势结束：接近 1x 时自动回弹
+                    if (scale < 1.05f) {
+                        scale = 1f
+                        offset = Offset.Zero
+                    }
                 }
             }
-            // ✅ 双击缩放
+            // 双击缩放
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onDoubleTap = {
-                        if (scale > 1f) {
+                    onDoubleTap = { tapOffset ->
+                        if (scale > 1.01f) {
+                            // 已缩放 → 重置
                             scale = 1f
                             offset = Offset.Zero
                         } else {
-                            scale = 2f
+                            // 未缩放 → 放大到点击位置
+                            val targetScale = 2.5f
+                            val centerX = containerSize.width / 2f
+                            val centerY = containerSize.height / 2f
+                            val maxX = ((targetScale - 1f) * containerSize.width / 2f)
+                            val maxY = ((targetScale - 1f) * containerSize.height / 2f)
+                            scale = targetScale
+                            offset = Offset(
+                                x = ((centerX - tapOffset.x) * (targetScale - 1f))
+                                    .coerceIn(-maxX, maxX),
+                                y = ((centerY - tapOffset.y) * (targetScale - 1f))
+                                    .coerceIn(-maxY, maxY)
+                            )
                         }
-                        onScaleChanged(scale)
                     }
                 )
             },

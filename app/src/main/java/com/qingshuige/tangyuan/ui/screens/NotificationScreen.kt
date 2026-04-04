@@ -55,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.TangyuanApplication
+import com.qingshuige.tangyuan.ui.adaptive.LocalChromeInsets
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
 import com.qingshuige.tangyuan.utils.withPanguSpacing
 import com.qingshuige.tangyuan.viewmodel.NotificationViewModel
@@ -94,7 +95,7 @@ fun NotificationScreen(
 
     Box(
         modifier = Modifier.fillMaxSize()
-            .padding(top = 108.dp, bottom = 80.dp)
+            .padding(LocalChromeInsets.current)
     ) {
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,

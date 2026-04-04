@@ -70,6 +70,7 @@ import coil.compose.AsyncImage
 import com.qingshuige.tangyuan.R
 import com.qingshuige.tangyuan.TangyuanApplication
 import com.qingshuige.tangyuan.model.User
+import com.qingshuige.tangyuan.ui.adaptive.LocalChromeInsets
 import com.qingshuige.tangyuan.ui.theme.EnglishFontFamily
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.ui.theme.TangyuanGeneralFontFamily
@@ -104,7 +105,8 @@ fun UserScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(top = 108.dp, bottom = 80.dp, start = 16.dp, end = 16.dp)
+            .padding(LocalChromeInsets.current)
+            .padding(horizontal = 16.dp)
 
     ) {
         if (isLoggedIn && currentUser != null) {
