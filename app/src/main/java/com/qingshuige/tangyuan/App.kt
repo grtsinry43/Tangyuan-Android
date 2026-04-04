@@ -8,20 +8,28 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,11 +37,19 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.qingshuige.tangyuan.navigation.Screen
+import com.qingshuige.tangyuan.ui.adaptive.AdaptiveSecondaryLayout
+import com.qingshuige.tangyuan.ui.adaptive.DetailPaneNavHost
+import com.qingshuige.tangyuan.ui.adaptive.DetailRoutes
+import com.qingshuige.tangyuan.ui.adaptive.LocalChromeInsets
+import com.qingshuige.tangyuan.ui.adaptive.LocalTangyuanLayoutInfo
+import com.qingshuige.tangyuan.ui.adaptive.computeChromeInsets
+import com.qingshuige.tangyuan.ui.adaptive.rememberTangyuanLayoutInfo
 import com.qingshuige.tangyuan.ui.components.ModernConfirmDialog
 import com.qingshuige.tangyuan.ui.components.GlobalMessageHost
 import com.qingshuige.tangyuan.ui.components.PageLevel
 import com.qingshuige.tangyuan.ui.components.ThemeBackgroundOverlay
 import com.qingshuige.tangyuan.ui.components.TangyuanBottomAppBar
+import com.qingshuige.tangyuan.ui.components.TangyuanNavigationRail
 import com.qingshuige.tangyuan.ui.components.TangyuanTopBar
 import com.qingshuige.tangyuan.ui.screens.AboutScreen
 import com.qingshuige.tangyuan.ui.screens.CategoryScreen
@@ -138,10 +154,44 @@ fun App(
     val currentMessage by messageViewModel.currentMessage.collectAsState()
     val currentDialog by dialogViewModel.currentDialog.collectAsState()
 
-    Box(
+    // 在最外层提供自适应布局信息，确保所有路由都能访问
+    val appLayoutInfo = rememberTangyuanLayoutInfo()
+
+    // 全局 Tab 状态，用于 NavigationRail 高亮和跨路由 Tab 切换
+    var selectedTab by rememberSaveable { mutableStateOf(Screen.Talk.route) }
+    val appHazeState = remember { HazeState() }
+
+    val bottomBarScreens = listOf(Screen.Talk, Screen.Topic, Screen.Message, Screen.User)
+    val currentTabScreen = bottomBarScreens.find { it.route == selectedTab } ?: Screen.Talk
+
+    CompositionLocalProvider(
+        LocalTangyuanLayoutInfo provides appLayoutInfo
+    ) {
+    Row(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+    ) {
+        // 宽屏下始终显示 NavigationRail
+        if (appLayoutInfo.useNavigationRail) {
+            TangyuanNavigationRail(
+                currentScreen = currentTabScreen,
+                onScreenSelected = { screen ->
+                    selectedTab = screen.route
+                    // 回到主页并切换 Tab
+                    navController.navigate("main") {
+                        popUpTo("main") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                hazeState = appHazeState
+            )
+        }
+
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxSize()
     ) {
         SharedTransitionLayout {
             NavHost(
@@ -150,6 +200,7 @@ fun App(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
+                    .haze(state = appHazeState)
             ) {
                 composable(
                     route = "main",
@@ -159,6 +210,8 @@ fun App(
                     popExitTransition = { fadePopExitTransition() }
                 ) {
                     MainFlow(
+                        selectedTab = selectedTab,
+                        onTabChanged = { selectedTab = it },
                         onLoginClick = { navController.navigate(Screen.Login.route) },
                         onPostClick = { postId ->
                             navController.navigate(Screen.PostDetail.createRoute(postId))
@@ -314,34 +367,31 @@ fun App(
                     popExitTransition = { fadePopExitTransition() }
                 ) { backStackEntry ->
                     val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+                    val layoutInfo = LocalTangyuanLayoutInfo.current
 
-                    UserDetailScreen(
-                        userId = userId,
-                        onBackClick = { navController.popBackStack() },
-                        onPostClick = { postId ->
+                    AdaptiveSecondaryLayout(
+                        isDualPane = layoutInfo.showDualPane,
+                        listContent = { onPostClick, _, onImageClick, onCategoryClick ->
+                            UserDetailScreen(
+                                userId = userId,
+                                onBackClick = { navController.popBackStack() },
+                                onPostClick = onPostClick,
+                                onImageClick = onImageClick,
+                                onFollowClick = { /* TODO */ },
+                                onCategoryClick = onCategoryClick,
+                                sharedTransitionScope = if (layoutInfo.showDualPane) null else this@SharedTransitionLayout,
+                                animatedContentScope = if (layoutInfo.showDualPane) null else this@composable
+                            )
+                        },
+                        singlePanePostClick = { postId ->
                             navController.navigate(Screen.PostDetail.createRoute(postId))
                         },
-                        onImageClick = { postId, imageIndex ->
-                            navController.navigate(
-                                Screen.ImageDetail.createRoute(
-                                    postId,
-                                    imageIndex
-                                )
-                            ) {
-                                popUpTo(Screen.PostDetail.createRoute(postId)) {
-                                    inclusive = true
-                                }
-                                launchSingleTop = true
-                            }
+                        singlePaneImageClick = { postId, imageIndex ->
+                            navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex))
                         },
-                        onFollowClick = {
-                            // TODO: 实现关注功能
-                        },
-                        onCategoryClick = { categoryId ->
+                        singlePaneCategoryClick = { categoryId ->
                             navController.navigate(Screen.CategoryDetail.createRoute(categoryId))
-                        },
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@composable
+                        }
                     )
                 }
 
@@ -357,26 +407,30 @@ fun App(
                     popExitTransition = { fadePopExitTransition() }
                 ) { backStackEntry ->
                     val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 0
+                    val layoutInfo = LocalTangyuanLayoutInfo.current
 
-                    CategoryScreen(
-                        categoryId = categoryId,
-                        onBackClick = { navController.popBackStack() },
-                        onPostClick = { postId ->
-                            navController.navigate(Screen.PostDetail.createRoute(postId))
-                        },
-                        onAuthorClick = { authorId ->
-                            navController.navigate(Screen.UserDetail.createRoute(authorId))
-                        },
-                        onImageClick = { postId, imageIndex ->
-                            navController.navigate(
-                                Screen.ImageDetail.createRoute(
-                                    postId,
-                                    imageIndex
-                                )
+                    AdaptiveSecondaryLayout(
+                        isDualPane = layoutInfo.showDualPane,
+                        listContent = { onPostClick, onAuthorClick, onImageClick, _ ->
+                            CategoryScreen(
+                                categoryId = categoryId,
+                                onBackClick = { navController.popBackStack() },
+                                onPostClick = onPostClick,
+                                onAuthorClick = onAuthorClick,
+                                onImageClick = onImageClick,
+                                sharedTransitionScope = if (layoutInfo.showDualPane) null else this@SharedTransitionLayout,
+                                animatedContentScope = if (layoutInfo.showDualPane) null else this@composable
                             )
                         },
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@composable
+                        singlePanePostClick = { postId ->
+                            navController.navigate(Screen.PostDetail.createRoute(postId))
+                        },
+                        singlePaneAuthorClick = { authorId ->
+                            navController.navigate(Screen.UserDetail.createRoute(authorId))
+                        },
+                        singlePaneImageClick = { postId, imageIndex ->
+                            navController.navigate(Screen.ImageDetail.createRoute(postId, imageIndex))
+                        }
                     )
                 }
 
@@ -478,12 +532,21 @@ fun App(
                     popEnterTransition = { slidePopEnterTransition() },
                     popExitTransition = { slidePopExitTransition() }
                 ) {
-                    SearchScreen(
-                        onBackClick = { navController.popBackStack() },
-                        onPostClick = { postId ->
+                    val layoutInfo = LocalTangyuanLayoutInfo.current
+
+                    AdaptiveSecondaryLayout(
+                        isDualPane = layoutInfo.showDualPane,
+                        listContent = { onPostClick, onAuthorClick, _, _ ->
+                            SearchScreen(
+                                onBackClick = { navController.popBackStack() },
+                                onPostClick = onPostClick,
+                                onUserClick = onAuthorClick
+                            )
+                        },
+                        singlePanePostClick = { postId ->
                             navController.navigate(Screen.PostDetail.createRoute(postId))
                         },
-                        onUserClick = { userId ->
+                        singlePaneAuthorClick = { userId ->
                             navController.navigate(Screen.UserDetail.createRoute(userId))
                         }
                     )
@@ -502,13 +565,17 @@ fun App(
             dialogData = currentDialog,
             onDismissRequest = { dialogViewModel.dismissDialog() }
         )
-    }
+    } // Box (content)
+    } // Row
+    } // CompositionLocalProvider
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MainFlow(
+    selectedTab: String = Screen.Talk.route,
+    onTabChanged: (String) -> Unit = {},
     onLoginClick: () -> Unit,
     onPostClick: (Int) -> Unit,
     onImageClick: (Int, Int) -> Unit = { _, _ -> },
@@ -546,6 +613,26 @@ fun MainFlow(
     val bottomBarScreens = listOf(Screen.Talk, Screen.Topic, Screen.Message, Screen.User)
     val currentScreen =
         bottomBarScreens.find { it.route == currentDestination?.route } ?: Screen.Talk
+
+    // 同步 App 级 Tab 状态 ↔ MainFlow 内部 Tab 导航
+    LaunchedEffect(currentDestination?.route) {
+        currentDestination?.route?.let { route ->
+            if (bottomBarScreens.any { it.route == route }) {
+                onTabChanged(route)
+            }
+        }
+    }
+    LaunchedEffect(selectedTab) {
+        if (mainNavController.currentDestination?.route != selectedTab) {
+            mainNavController.navigate(selectedTab) {
+                popUpTo(mainNavController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
 
     // 观察登录状态和用户信息
     val loginState by userViewModel.loginState.collectAsState()
@@ -591,156 +678,291 @@ fun MainFlow(
         }
     }
 
+    // 自适应布局信息
+    val layoutInfo = rememberTangyuanLayoutInfo()
+
+    // 双栏模式下详情面板路由状态
+    var selectedDetailRoute by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // 切换 Tab 时清空详情面板
+    LaunchedEffect(currentScreen) {
+        if (layoutInfo.showDualPane) {
+            selectedDetailRoute = null
+        }
+    }
+
     // 创建Haze状态用于模糊效果
     val hazeState = remember { HazeState() }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TangyuanTopBar(
-                currentScreen = currentScreen,
-                isLoggedIn = isLoggedIn,
-                avatarUrl = avatarUrl,
-                pageLevel = PageLevel.PRIMARY,
-                onAvatarClick = onAvatarClick,
-                onAnnouncementClick = { postViewModel.getNoticePost() },
-                onPostClick = onCreatePostClick,
-                onSearchClick = onSearchClick,
-                hazeState = hazeState
-            )
-        },
-        bottomBar = {
-            TangyuanBottomAppBar(
-                currentScreen = currentScreen,
-                onScreenSelected = { selectedScreen ->
-                    mainNavController.navigate(selectedScreen.route) {
-                        popUpTo(mainNavController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                hazeState = hazeState
-            )
+    // Tab 导航
+    val navigateToTab = { selectedScreen: Screen ->
+        mainNavController.navigate(selectedScreen.route) {
+            popUpTo(mainNavController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
         }
-    ) { _ ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            ThemeBackgroundOverlay(
-                themeMode = effectiveThemeMode,
-                level = ThemeBackgroundLevel.PRIMARY,
-                alpha = 0.07f
-            )
-            NavHost(
-                navController = mainNavController,
-                startDestination = Screen.Talk.route,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .haze(state = hazeState),
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { it / 2 },
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    ) + fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { -it / 2 },
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    ) + fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { -it / 2 },
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    ) + fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { it / 2 },
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    ) + fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 200,
-                            easing = QuickEasing
-                        )
-                    )
-                }
-            ) {
-                composable(Screen.Talk.route) {
-                    TalkScreen(
-                        onPostClick = onPostClick,
-                        onAuthorClick = onAuthorClick,
-                        onImageClick = onImageClick,
-                        onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope
-                    )
-                }
-                composable(Screen.Topic.route) {
-                    TopicScreen(
-                        onPostClick = onPostClick,
-                        onAuthorClick = onAuthorClick,
-                        onImageClick = onImageClick,
-                        onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope
-                    )
-                }
-                composable(Screen.Message.route) {
-                    NotificationScreen(
-                        onNotificationClick = { sourceId, sourceType ->
-                            // 根据通知类型跳转到相应页面
-                            when (sourceType) {
-                                "post" -> onPostClick(sourceId)
-                                "comment" -> onPostClick(sourceId) // 评论通知跳转到帖子详情
-                                "user" -> onAuthorClick(sourceId) // 关注通知跳转到用户详情
-                                else -> { /* 忽略未知类型 */
-                                }
+    }
+
+    CompositionLocalProvider(
+        LocalTangyuanLayoutInfo provides layoutInfo,
+        LocalChromeInsets provides computeChromeInsets(layoutInfo)
+    ) {
+        if (layoutInfo.showDualPane) {
+            // =================== 宽屏双栏布局 ===================
+            // 双栏模式下的回调：导航到详情面板而非全屏
+            val dualPanePostClick = { postId: Int ->
+                selectedDetailRoute = DetailRoutes.postDetail(postId)
+            }
+            // 分类/作者导航到根 NavHost（全屏，自带双���适配）
+            val dualPaneAuthorClick = onAuthorClick
+            val dualPaneImageClick = { postId: Int, imageIndex: Int ->
+                selectedDetailRoute = DetailRoutes.imageDetail(postId, imageIndex)
+            }
+            val dualPaneCategoryClick = onCategoryClick
+
+            Row(modifier = Modifier.fillMaxSize()) {
+                // 列表面板（NavigationRail 已提升到 App 层级）
+                Box(modifier = Modifier.weight(0.38f)) {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                        topBar = {
+                            if (!layoutInfo.isVerticallyConstrained) {
+                                TangyuanTopBar(
+                                    currentScreen = currentScreen,
+                                    isLoggedIn = isLoggedIn,
+                                    avatarUrl = avatarUrl,
+                                    pageLevel = PageLevel.PRIMARY,
+                                    onAvatarClick = onAvatarClick,
+                                    onAnnouncementClick = { postViewModel.getNoticePost() },
+                                    onPostClick = onCreatePostClick,
+                                    onSearchClick = onSearchClick,
+                                    hazeState = hazeState
+                                )
                             }
                         }
+                    ) { _ ->
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            ThemeBackgroundOverlay(
+                                themeMode = effectiveThemeMode,
+                                level = ThemeBackgroundLevel.PRIMARY,
+                                alpha = 0.07f
+                            )
+                            TabNavHost(
+                                mainNavController = mainNavController,
+                                hazeState = hazeState,
+                                onPostClick = dualPanePostClick,
+                                onAuthorClick = dualPaneAuthorClick,
+                                onImageClick = dualPaneImageClick,
+                                onCategoryClick = dualPaneCategoryClick,
+                                onEditProfileClick = { selectedDetailRoute = DetailRoutes.EDIT_PROFILE },
+                                onPostManagementClick = { selectedDetailRoute = DetailRoutes.POST_MANAGEMENT },
+                                onThemeSettingsClick = { selectedDetailRoute = DetailRoutes.THEME_SETTINGS },
+                                onAboutClick = { selectedDetailRoute = DetailRoutes.ABOUT },
+                                onDesignSystemClick = { selectedDetailRoute = DetailRoutes.DESIGN_SYSTEM },
+                                sharedTransitionScope = null,
+                                animatedContentScope = null
+                            )
+                        }
+                    }
+                }
+
+                // 分隔线
+                VerticalDivider(
+                    modifier = Modifier.fillMaxHeight(),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
+
+                // 详情面板
+                Box(modifier = Modifier.weight(0.62f)) {
+                    DetailPaneNavHost(
+                        detailRoute = selectedDetailRoute,
+                        onNavigateFullScreen = { /* 预留全屏导航 */ }
                     )
                 }
-                composable(Screen.User.route) {
-                    UserScreen(
-                        onEditProfile = onEditProfileClick,
-                        onPostManagement = onPostManagementClick,
-                        onSettings = onThemeSettingsClick,
-                        onAbout = onAboutClick,
-                        onDesignSystem = onDesignSystemClick,
+            }
+        } else {
+            // =================== 窄屏单栏布局 ===================
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                topBar = {
+                    if (!layoutInfo.isVerticallyConstrained) {
+                        TangyuanTopBar(
+                            currentScreen = currentScreen,
+                            isLoggedIn = isLoggedIn,
+                            avatarUrl = avatarUrl,
+                            pageLevel = PageLevel.PRIMARY,
+                            onAvatarClick = onAvatarClick,
+                            onAnnouncementClick = { postViewModel.getNoticePost() },
+                            onPostClick = onCreatePostClick,
+                            onSearchClick = onSearchClick,
+                            hazeState = hazeState
+                        )
+                    }
+                },
+                bottomBar = {
+                    TangyuanBottomAppBar(
+                        currentScreen = currentScreen,
+                        onScreenSelected = navigateToTab,
+                        hazeState = hazeState
+                    )
+                }
+            ) { _ ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    ThemeBackgroundOverlay(
+                        themeMode = effectiveThemeMode,
+                        level = ThemeBackgroundLevel.PRIMARY,
+                        alpha = 0.07f
+                    )
+                    TabNavHost(
+                        mainNavController = mainNavController,
+                        hazeState = hazeState,
+                        onPostClick = onPostClick,
+                        onAuthorClick = onAuthorClick,
+                        onImageClick = onImageClick,
+                        onCategoryClick = onCategoryClick,
+                        onEditProfileClick = onEditProfileClick,
+                        onPostManagementClick = onPostManagementClick,
+                        onThemeSettingsClick = onThemeSettingsClick,
+                        onAboutClick = onAboutClick,
+                        onDesignSystemClick = onDesignSystemClick,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedContentScope = animatedContentScope
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * 标签页 NavHost — 单栏和双栏共用，仅回调函数不同
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun TabNavHost(
+    mainNavController: NavHostController,
+    hazeState: HazeState,
+    onPostClick: (Int) -> Unit,
+    onAuthorClick: (Int) -> Unit,
+    onImageClick: (Int, Int) -> Unit,
+    onCategoryClick: (Int) -> Unit,
+    onEditProfileClick: () -> Unit,
+    onPostManagementClick: () -> Unit,
+    onThemeSettingsClick: () -> Unit,
+    onAboutClick: () -> Unit,
+    onDesignSystemClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedContentScope: AnimatedContentScope?
+) {
+    NavHost(
+        navController = mainNavController,
+        startDestination = Screen.Talk.route,
+        modifier = Modifier
+            .fillMaxSize()
+            .haze(state = hazeState),
+        enterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { it / 2 },
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            ) + fadeIn(
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            )
+        },
+        exitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { -it / 2 },
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            ) + fadeOut(
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            )
+        },
+        popEnterTransition = {
+            slideInHorizontally(
+                initialOffsetX = { -it / 2 },
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            ) + fadeIn(
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            )
+        },
+        popExitTransition = {
+            slideOutHorizontally(
+                targetOffsetX = { it / 2 },
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            ) + fadeOut(
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = QuickEasing
+                )
+            )
+        }
+    ) {
+        composable(Screen.Talk.route) {
+            TalkScreen(
+                onPostClick = onPostClick,
+                onAuthorClick = onAuthorClick,
+                onImageClick = onImageClick,
+                onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
+            )
+        }
+        composable(Screen.Topic.route) {
+            TopicScreen(
+                onPostClick = onPostClick,
+                onAuthorClick = onAuthorClick,
+                onImageClick = onImageClick,
+                onCategoryClick = { categoryId -> onCategoryClick(categoryId) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
+            )
+        }
+        composable(Screen.Message.route) {
+            NotificationScreen(
+                onNotificationClick = { sourceId, sourceType ->
+                    when (sourceType) {
+                        "post" -> onPostClick(sourceId)
+                        "comment" -> onPostClick(sourceId)
+                        "user" -> onAuthorClick(sourceId)
+                        else -> { /* 忽略未知类型 */ }
+                    }
+                }
+            )
+        }
+        composable(Screen.User.route) {
+            UserScreen(
+                onEditProfile = onEditProfileClick,
+                onPostManagement = onPostManagementClick,
+                onSettings = onThemeSettingsClick,
+                onAbout = onAboutClick,
+                onDesignSystem = onDesignSystemClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
+            )
         }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.qingshuige.tangyuan.model.PostCard
+import com.qingshuige.tangyuan.ui.adaptive.LocalChromeInsets
 import com.qingshuige.tangyuan.ui.components.PostCardItem
 import com.qingshuige.tangyuan.ui.theme.LiteraryFontFamily
 import com.qingshuige.tangyuan.utils.ErrorMapper
@@ -144,7 +145,7 @@ fun PostList(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 80.dp, top = 108.dp) // 为底部导航栏留空间
+        contentPadding = LocalChromeInsets.current
     ) {
         items(
             items = posts,
